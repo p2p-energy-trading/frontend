@@ -3,99 +3,123 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-
 export const getFilterOptions = (tableData, headerData) => {
-    return tableData[0]
-        .slice(1) 
-        .map((_, colIdx) => headerData[colIdx].filter ? colIdx : null)
-        .filter(idx => idx !== null)
-        .reduce((acc, colIdx) => {
-            const uniqueValues = [
-                ...new Set(
-                    tableData.map(row => {
-                        const val = row[colIdx + 1]; 
-                        if (typeof val === "object" && val.text) return val.text;
-                        return val;
-                    })
-                )
-            ];
-            acc[colIdx] = uniqueValues;
-            return acc;
-        }, {});
+  if (
+    !tableData ||
+    tableData.length === 0 ||
+    !tableData[0] ||
+    !Array.isArray(tableData[0])
+  ) {
+    return {};
+  }
+
+  return tableData[0]
+    .slice(1)
+    .map((_, colIdx) => (headerData[colIdx].filter ? colIdx : null))
+    .filter((idx) => idx !== null)
+    .reduce((acc, colIdx) => {
+      const uniqueValues = [
+        ...new Set(
+          tableData.map((row) => {
+            const val = row[colIdx + 1];
+            if (typeof val === "object" && val.text) return val.text;
+            return val;
+          })
+        ),
+      ];
+      acc[colIdx] = uniqueValues;
+      return acc;
+    }, {});
 };
 
-export const handleSort = (colIdx, sortStates, tableData, originalTableData, headerData) => {
-    const newSortStates = sortStates.map((state, idx) => idx === colIdx ? (state + 1) % 3 : 0);
+export const handleSort = (
+  colIdx,
+  sortStates,
+  tableData,
+  originalTableData,
+  headerData
+) => {
+  const newSortStates = sortStates.map((state, idx) =>
+    idx === colIdx ? (state + 1) % 3 : 0
+  );
 
-    if (newSortStates[colIdx] === 0) {
-        return { newSortStates, sortedData: originalTableData };
+  if (newSortStates[colIdx] === 0) {
+    return { newSortStates, sortedData: originalTableData };
+  }
+
+  const behavior = headerData?.[colIdx]?.sort?.behavior || "text";
+
+  const getSortValue = (val) => {
+    if (val && typeof val === "object") {
+      if (val.text) return val.text;
+      if (val.level !== undefined) return val.level;
+      return "";
+    }
+    return val;
+  };
+
+  const sorted = [...tableData].sort((a, b) => {
+    let aVal = getSortValue(a[colIdx + 1]);
+    let bVal = getSortValue(b[colIdx + 1]);
+
+    if (behavior === "number") {
+      aVal = parseFloat(aVal?.toString().replace(/[^\d.-]/g, "")) || 0;
+      bVal = parseFloat(bVal?.toString().replace(/[^\d.-]/g, "")) || 0;
+      return newSortStates[colIdx] === 1 ? aVal - bVal : bVal - aVal;
     }
 
-    const behavior = headerData?.[colIdx]?.sort?.behavior || 'text';
+    if (behavior === "date") {
+      aVal = new Date(aVal).getTime() || 0;
+      bVal = new Date(bVal).getTime() || 0;
+      return newSortStates[colIdx] === 1 ? aVal - bVal : bVal - aVal;
+    }
 
-    const getSortValue = (val) => {
-        if (val && typeof val === 'object') {
-            if (val.text) return val.text;
-            if (val.level !== undefined) return val.level;
-            return '';
-        }
-        return val;
-    };
+    return newSortStates[colIdx] === 1
+      ? String(aVal).localeCompare(String(bVal))
+      : String(bVal).localeCompare(String(aVal));
+  });
 
-    const sorted = [...tableData].sort((a, b) => {
-        let aVal = getSortValue(a[colIdx + 1]);
-        let bVal = getSortValue(b[colIdx + 1]);
-
-        if (behavior === 'number') {
-            aVal = parseFloat(aVal?.toString().replace(/[^\d.-]/g, '')) || 0;
-            bVal = parseFloat(bVal?.toString().replace(/[^\d.-]/g, '')) || 0;
-            return newSortStates[colIdx] === 1 ? aVal - bVal : bVal - aVal;
-        }
-
-        if (behavior === 'date') {
-            aVal = new Date(aVal).getTime() || 0;
-            bVal = new Date(bVal).getTime() || 0;
-            return newSortStates[colIdx] === 1 ? aVal - bVal : bVal - aVal;
-        }
-
-        return newSortStates[colIdx] === 1
-            ? String(aVal).localeCompare(String(bVal))
-            : String(bVal).localeCompare(String(aVal));
-    });
-
-    return { newSortStates, sortedData: sorted };
+  return { newSortStates, sortedData: sorted };
 };
 
 export const handleFilter = (tableData, filterChecked) => {
-    return tableData.filter(row => {
-        return Object.entries(filterChecked).every(([filterColIdx, values]) => {
-            if (!values || values.length === 0) return true;
-            const val = row[Number(filterColIdx) + 1];
-            const compareVal = (typeof val === "object" && val.text) ? val.text : val;
-            return values.includes(compareVal);
-        });
+  return tableData.filter((row) => {
+    return Object.entries(filterChecked).every(([filterColIdx, values]) => {
+      if (!values || values.length === 0) return true;
+      const val = row[Number(filterColIdx) + 1];
+      const compareVal = typeof val === "object" && val.text ? val.text : val;
+      return values.includes(compareVal);
     });
+  });
 };
 
-export const filterBySearch = (tableData, tableHeaderData, searchColumn, searchValue, useRegex = false) => {
-    if (!searchValue || !searchColumn) return tableData;
-    const colIdx = tableHeaderData.findIndex(h => h.columnName === searchColumn);
-    let regex;
-    if (useRegex) {
-        try {
-            regex = new RegExp(searchValue, "i");
-        } catch {
-            return tableData;
-        }
+export const filterBySearch = (
+  tableData,
+  tableHeaderData,
+  searchColumn,
+  searchValue,
+  useRegex = false
+) => {
+  if (!searchValue || !searchColumn) return tableData;
+  const colIdx = tableHeaderData.findIndex(
+    (h) => h.columnName === searchColumn
+  );
+  let regex;
+  if (useRegex) {
+    try {
+      regex = new RegExp(searchValue, "i");
+    } catch {
+      return tableData;
     }
-    return tableData.filter(row => {
-        let cell = row[colIdx + 1]; 
-        if (typeof cell === "object" && cell.text) cell = cell.text;
-        if (useRegex) {
-            return regex.test(cell?.toString() || "");
-        }
-        return cell?.toString().toLowerCase().includes(searchValue.toLowerCase());
-    });
+  }
+  return tableData.filter((row) => {
+    let cell = row[colIdx + 1];
+    if (typeof cell === "object" && cell.text) cell = cell.text;
+    if (useRegex) {
+      return regex.test(cell?.toString() || "");
+    }
+    return cell?.toString().toLowerCase().includes(searchValue.toLowerCase());
+  });
 };
 
 export const getTextWidth = (text, font = "14px Arial") => {
@@ -177,6 +201,10 @@ export const handleExportExcel = ({
   tableData,
   tableHeaderData,
 }) => {
+  if (!tableData || tableData.length === 0) {
+    return;
+  }
+
   const exportRows =
     showCheckboxes && selectedRows.length > 0
       ? tableData.filter((row) => selectedRows.includes(row[0]))
@@ -185,7 +213,7 @@ export const handleExportExcel = ({
   const headers = ["#", ...tableHeaderData.map((h) => h.columnName)];
   const rows = exportRows.map((row, i) => [
     i + 1,
-    ...row
+    ...(Array.isArray(row) ? row : [])
       .slice(1)
       .map((cell) =>
         typeof cell === "object"
@@ -200,10 +228,7 @@ export const handleExportExcel = ({
 
   const colWidths = headers.map((_, colIdx) => {
     return {
-      wch: Math.max(
-        ...data.map((row) => String(row[colIdx] ?? "").length),
-        6
-      ),
+      wch: Math.max(...data.map((row) => String(row[colIdx] ?? "").length), 6),
     };
   });
 
@@ -221,6 +246,10 @@ export const handleExportCSV = ({
   tableData,
   tableHeaderData,
 }) => {
+  if (!tableData || tableData.length === 0) {
+    return;
+  }
+
   const exportRows =
     showCheckboxes && selectedRows.length > 0
       ? tableData.filter((row) => selectedRows.includes(row[0]))
@@ -229,7 +258,7 @@ export const handleExportCSV = ({
   const headers = ["#", ...tableHeaderData.map((h) => h.columnName)];
   const rows = exportRows.map((row, i) => [
     i + 1,
-    ...row
+    ...(Array.isArray(row) ? row : [])
       .slice(1)
       .map((cell) =>
         typeof cell === "object"
@@ -257,6 +286,10 @@ export const handleExportPDF = ({
   tableData,
   tableHeaderData,
 }) => {
+  if (!tableData || tableData.length === 0) {
+    return;
+  }
+
   const exportRows =
     showCheckboxes && selectedRows.length > 0
       ? tableData.filter((row) => selectedRows.includes(row[0]))
@@ -265,7 +298,7 @@ export const handleExportPDF = ({
   const headers = [["#", ...tableHeaderData.map((h) => h.columnName)]];
   const rows = exportRows.map((row, i) => [
     i + 1,
-    ...row
+    ...(Array.isArray(row) ? row : [])
       .slice(1)
       .map((cell) =>
         typeof cell === "object"
@@ -292,9 +325,7 @@ export const handleExportPDF = ({
       const pageCount = doc.internal.getNumberOfPages();
       doc.setFontSize(10);
       doc.text(
-        `Page ${
-          doc.internal.getCurrentPageInfo().pageNumber
-        } of ${pageCount}`,
+        `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount}`,
         data.settings.margin.left,
         doc.internal.pageSize.height - 10
       );
@@ -303,7 +334,12 @@ export const handleExportPDF = ({
   doc.save("datagrid_export.pdf");
 };
 
-export const handleCheckboxChange = (rowId, selectedRows, setSelectedRows, onSelectionChange) => {
+export const handleCheckboxChange = (
+  rowId,
+  selectedRows,
+  setSelectedRows,
+  onSelectionChange
+) => {
   setSelectedRows((prev) => {
     let updated;
     if (prev.includes(rowId)) {
@@ -316,7 +352,12 @@ export const handleCheckboxChange = (rowId, selectedRows, setSelectedRows, onSel
   });
 };
 
-export const handleSelectAll = (checked, filteredData, setSelectedRows, onSelectionChange) => {
+export const handleSelectAll = (
+  checked,
+  filteredData,
+  setSelectedRows,
+  onSelectionChange
+) => {
   let updated;
   if (checked) {
     updated = filteredData.map((row) => row[0]);
@@ -327,7 +368,14 @@ export const handleSelectAll = (checked, filteredData, setSelectedRows, onSelect
   onSelectionChange(updated);
 };
 
-export const onSortHandler = (colIdx, sortStates, tableData, tableHeaderData, setSortStates, setFilteredData) => {
+export const onSortHandler = (
+  colIdx,
+  sortStates,
+  tableData,
+  tableHeaderData,
+  setSortStates,
+  setFilteredData
+) => {
   const { newSortStates, sortedData } = handleSort(
     colIdx,
     sortStates,
@@ -339,7 +387,14 @@ export const onSortHandler = (colIdx, sortStates, tableData, tableHeaderData, se
   setFilteredData(sortedData);
 };
 
-export const handleFilterChangeHandler = (colIdx, checkedValues, filterChecked, tableData, setFilterChecked, setFilteredData) => {
+export const handleFilterChangeHandler = (
+  colIdx,
+  checkedValues,
+  filterChecked,
+  tableData,
+  setFilterChecked,
+  setFilteredData
+) => {
   setFilterChecked((prev) => {
     const updated = { ...prev, [colIdx]: checkedValues };
     const filtered = handleFilter(tableData, updated);

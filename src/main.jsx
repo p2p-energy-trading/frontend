@@ -3,8 +3,14 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router";
-// import { originalTableData, tableHeaderData } from './pages/utils/dummy.js';
+import { AuthProvider } from "./context/AuthContext.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+
+// Import components
 import Homepage from "./pages/Home/Homepage.jsx";
+import Login from "./pages/Login/Login.jsx";
+import Register from "./pages/Register/Register.jsx";
 import Trade from "./pages/Trade/Trade.jsx";
 import PowerConversion from "./pages/Energy Conversion/PowerConversion.jsx";
 import BalanceConversion from "./pages/Balance Conversion/BalanceConversion.jsx";
@@ -14,6 +20,14 @@ import Wallet from "./pages/Wallet/Wallet.jsx";
 import DashboardUser from "./pages/Dashboard User/DashboardUser.jsx";
 
 const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
+  },
   {
     path: "/",
     element: <App />,
@@ -28,27 +42,51 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard-user",
-        element: <DashboardUser />,
+        element: (
+          <ProtectedRoute>
+            <DashboardUser />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/trade",
-        element: <Trade />,
+        element: (
+          <ProtectedRoute>
+            <Trade />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/power-conversion",
-        element: <PowerConversion />,
+        element: (
+          <ProtectedRoute>
+            <PowerConversion />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/balance-conversion",
-        element: <BalanceConversion />,
+        element: (
+          <ProtectedRoute>
+            <BalanceConversion />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/smart-meter",
-        element: <SmartMeter />,
+        element: (
+          <ProtectedRoute>
+            <SmartMeter />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/wallet",
-        element: <Wallet />,
+        element: (
+          <ProtectedRoute>
+            <Wallet />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
@@ -56,6 +94,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>
 );

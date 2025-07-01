@@ -1,5 +1,7 @@
 import { useContext } from "react";
 import { AppContext } from "../context/context";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
 
 /**
  * Navbar component renders a sticky navigation bar with breadcrumb navigation,
@@ -12,14 +14,22 @@ import { AppContext } from "../context/context";
  *
  * Context:
  * - Consumes `theme` and `setTheme` from `AppContext` to manage theme state.
+ * - Consumes auth context for user data and logout functionality.
  *
  * @component
  * @returns {JSX.Element} The rendered Navbar component.
  */
 const Navbar = () => {
   const { theme, setTheme } = useContext(AppContext);
+  const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const handleThemeChange = (e) => setTheme(e.target.checked);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     // Sticky navbar with shadow and padding
@@ -87,6 +97,7 @@ const Navbar = () => {
           </svg>
         </label>
         {/* User avatar dropdown menu */}
+        {/* User avatar dropdown with authentication */}
         <div className="dropdown dropdown-end ml-4">
           <div
             tabIndex={0}
@@ -95,7 +106,7 @@ const Navbar = () => {
           >
             <div className="w-10 rounded-full">
               <img
-                alt="Tailwind CSS Navbar component"
+                alt="User avatar"
                 src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
               />
             </div>
@@ -104,18 +115,39 @@ const Navbar = () => {
             tabIndex={0}
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
           >
-            <li>
-              <a className="justify-between">
-                Profile
-                <span className="badge">New</span>
-              </a>
-            </li>
-            <li>
-              <a>Settings</a>
-            </li>
-            <li>
-              <a>Logout</a>
-            </li>
+            {isAuthenticated ? (
+              <>
+                <li className="px-2 py-1">
+                  <span className="text-sm font-medium text-base-content/70">
+                    {user?.name || user?.email || "User"}
+                  </span>
+                </li>
+                <div className="divider my-1"></div>
+                <li>
+                  <a className="justify-between">
+                    Profile
+                    <span className="badge badge-sm">New</span>
+                  </a>
+                </li>
+                <li>
+                  <a>Settings</a>
+                </li>
+                <li>
+                  <a onClick={handleLogout} className="text-error">
+                    Logout
+                  </a>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <a onClick={() => navigate("/login")}>Login</a>
+                </li>
+                <li>
+                  <a onClick={() => navigate("/register")}>Sign up</a>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>

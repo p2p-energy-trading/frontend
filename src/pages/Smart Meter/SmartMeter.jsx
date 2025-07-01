@@ -1,12 +1,12 @@
 import { useContext, useEffect, useMemo } from "react";
 import { BoltIcon } from "@heroicons/react/24/outline";
 import MetricCard from "./components/MetricCard";
-import DeviceInfo from "./components/DeviceInfo";
-import TimeWindowSelector from "./components/TimeWindowSelector";
+import DeviceInfoApi from "./components/DeviceInfoApi";
 import BatteryCard from "./components/BatteryCard";
 import GridStatusCard from "./components/GridStatusCard";
 import EnergyHistorySection from "./components/EnergyHistorySection";
-import useSmartMeterData from "./hooks/useSmartMeterData";
+import DeviceControlPanel from "./components/DeviceControlPanel";
+import useSmartMeterApi from "./hooks/useSmartMeterApi";
 import { useChartColors } from "./helper/chartColors";
 import { chartOptions } from "./helper/chartOptions";
 import {
@@ -44,12 +44,11 @@ ChartJS.register(
 
 const SmartMeter = () => {
   const {
-    selectedDevice,
-    setSelectedDevice,
+    selectedMeter,
+    setSelectedMeter,
+    userProfile,
     lastUpdate,
     deviceConnected,
-    // timeWindow,
-    // setTimeWindow,
     solar,
     consume,
     battery,
@@ -59,7 +58,14 @@ const SmartMeter = () => {
     energyHistory,
     batteryFlow,
     batteryStatus,
-  } = useSmartMeterData();
+    deviceStatus,
+    sendControlCommand,
+    isControlling,
+    controlError,
+    loading,
+    error,
+    refreshData,
+  } = useSmartMeterApi();
 
   const { theme } = useContext(AppContext); // listen theme from context
 
@@ -115,127 +121,154 @@ const SmartMeter = () => {
   );
 
   return (
-    <div className="w-full card card-border border-2 border-base-200 bg-base-100  p-8 space-y-8 ">
+    <div className="w-full card card-border border-2 border-base-200 bg-base-100 p-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <BoltIcon className="w-7 h-7 text-primary" />
           Smart Meter Dashboard
         </h2>
-        {/* <span className="flex items-center gap-2 text-xs">
-          <span
-            className={`inline-block w-2 h-2 rounded-full ${
-              deviceConnected ? "bg-green-500" : "bg-gray-400"
-            }`}
-          ></span>
-          {deviceConnected ? "Device Connected" : "Disconnected"}
-        </span> */}
+        <button
+          className="btn btn-sm btn-outline"
+          onClick={refreshData}
+          disabled={loading}
+        >
+          {loading ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : (
+            "Refresh"
+          )}
+        </button>
       </div>
 
-      {/* Device Info */}
-      <DeviceInfo
-        selectedDevice={selectedDevice}
-        setSelectedDevice={setSelectedDevice}
-        lastUpdate={lastUpdate}
-        deviceConnected={deviceConnected}
-      />
+      {/* Error Display */}
+      {error && (
+        <div className="alert alert-error">
+          <span>{error}</span>
+        </div>
+      )}
 
-      {/* Time Window Selector */}
-      {/* <TimeWindowSelector
-        timeWindow={timeWindow}
-        setTimeWindow={setTimeWindow}
-      /> */}
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      ) : (
+        <>
+          {/* Device Info */}
+          <DeviceInfoApi
+            selectedMeter={selectedMeter}
+            setSelectedMeter={setSelectedMeter}
+            userProfile={userProfile}
+            lastUpdate={lastUpdate}
+            deviceConnected={deviceConnected}
+          />
 
-      {/* Main Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-        <MetricCard
-          icon={
-            <svg
-              className="w-6 h-6 text-warning"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="5"
-                strokeWidth={2}
-                stroke="currentColor"
-              />
-              <path
-                strokeLinecap="round"
-                strokeWidth={2}
-                stroke="currentColor"
-                d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07l-1.41-1.41M6.34 6.34l-1.41-1.41m12.02 0l-1.41 1.41M6.34 17.66l-1.41 1.41"
-              />
-            </svg>
-          }
-          label="Solar Generation"
-          value={solar.toFixed(2)}
-          unit="kW"
-          color="text-warning"
-          chart={
-            <div className="w-full h-16 relative">
-              <Line options={chartOptions} data={solarChartData} height={48} />
-            </div>
-          }
-          description={"Realtime solar panel output"}
-        />
-        <MetricCard
-          icon={
-            <svg
-              className="w-6 h-6 text-error"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeWidth={2}
-                stroke="currentColor"
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          }
-          label="Power Consumption"
-          value={consume.toFixed(2)}
-          unit="kW"
-          color="text-error"
-          chart={
-            <div className="w-full h-16 relative">
-              <Line
-                options={chartOptions}
-                data={consumeChartData}
-                height={48}
-              />
-            </div>
-          }
-          description={"Realtime power consumption"}
-        />
-        <BatteryCard
-          battery={battery}
-          batteryPercent={batteryPercent}
-          batteryStatus={batteryStatus}
-          batteryFlow={batteryFlow}
-          description={"Battery status and flow"}
-        />
-      </div>
+          {/* Main Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+            <MetricCard
+              icon={
+                <svg
+                  className="w-6 h-6 text-warning"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="5"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07l-1.41-1.41M6.34 6.34l-1.41-1.41m12.02 0l-1.41 1.41M6.34 17.66l-1.41 1.41"
+                  />
+                </svg>
+              }
+              label="Solar Generation"
+              value={solar.toFixed(2)}
+              unit="kW"
+              color="text-warning"
+              chart={
+                <div className="w-full h-16 relative">
+                  <Line
+                    options={chartOptions}
+                    data={solarChartData}
+                    height={48}
+                  />
+                </div>
+              }
+              description={"Real-time solar panel output"}
+            />
+            <MetricCard
+              icon={
+                <svg
+                  className="w-6 h-6 text-error"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              }
+              label="Power Consumption"
+              value={consume.toFixed(2)}
+              unit="kW"
+              color="text-error"
+              chart={
+                <div className="w-full h-16 relative">
+                  <Line
+                    options={chartOptions}
+                    data={consumeChartData}
+                    height={48}
+                  />
+                </div>
+              }
+              description={"Real-time power consumption"}
+            />
+            <BatteryCard
+              battery={battery}
+              batteryPercent={batteryPercent}
+              batteryStatus={batteryStatus}
+              batteryFlow={batteryFlow}
+              description={"Battery status and flow"}
+            />
+          </div>
 
-      {/* Grid Status */}
-      <GridStatusCard
-        gridStatus={gridStatus}
-        grid={grid}
-        gridChartData={gridChartData}
-      />
+          {/* Grid Status */}
+          <GridStatusCard
+            gridStatus={gridStatus}
+            grid={grid}
+            gridChartData={gridChartData}
+          />
 
-      {/* Energy History */}
-      <EnergyHistorySection
-        energyHistory={energyHistory}
-        historyBarData={historyBarData}
-      />
+          {/* Device Control Panel */}
+          <DeviceControlPanel
+            deviceStatus={deviceStatus}
+            sendControlCommand={sendControlCommand}
+            isControlling={isControlling}
+            controlError={controlError}
+            selectedMeter={selectedMeter}
+          />
+
+          {/* Energy History */}
+          <EnergyHistorySection
+            energyHistory={energyHistory}
+            historyBarData={historyBarData}
+          />
+        </>
+      )}
     </div>
   );
 };

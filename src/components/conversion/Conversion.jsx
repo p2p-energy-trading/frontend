@@ -1,178 +1,400 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { apiCall } from "../../utils/api";
 
-const dummyWallets = [
-  { address: '0xABC123...', etk_balance: 12.5, idrs_balance: 20000 },
-  { address: '0xDEF456...', etk_balance: 3.75, idrs_balance: 8000 },
-  { address: '0xGHI789...', etk_balance: 0.0, idrs_balance: 1000 },
-];
-
-const Conversion = ({ first_change, second_change, rate, balanceKey }) => {
-  const [tab, setTab] = useState('deposit');
-  const [walletIdx, setWalletIdx] = useState(0);
+const Conversion = ({ first_change, second_change, rate }) => {
+  const { user } = useAuth();
+  const [tab, setTab] = useState("deposit");
+  const [selectedWallet, setSelectedWallet] = useState("");
+  const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState('');
-  const [depositAmount, setDepositAmount] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [balance, setBalance] = useState(dummyWallets[walletIdx][balanceKey]);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [balances, setBalances] = useState({ ETK: 0, IDRS: 0 });
 
-  // Simulasi refresh saldo
-  const refreshBalance = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setBalance(dummyWallets[walletIdx][balanceKey]);
+  // Define functions first
+  const fetchWallets = async () => {
+    try {
+      const response = await apiCall("/wallet/list");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setWallets(data.data);
+          if (data.data.length > 0) {
+            setSelectedWallet(data.data[0].walletAddress);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching wallets:", error);
+    }
+  };
+
+  const fetchWalletBalances = useCallback(async () => {
+    if (!selectedWallet) return;
+
+    try {
+      setLoading(true);
+      const response = await apiCall(`/wallet/${selectedWallet}/balances`);
+      if (response.ok) {
+        const data = await response.json();
+        setBalances(data);
+      }
+    } catch (error) {
+      console.error("Error fetching balances:", error);
+    } finally {
       setLoading(false);
-    }, 1000);
-  };
+    }
+  }, [selectedWallet]);
 
-  // Ganti wallet
+  // Load wallets on component mount
+  useEffect(() => {
+    if (user?.wallets && user.wallets.length > 0) {
+      setWallets(user.wallets);
+      if (user.wallets[0]) {
+        setSelectedWallet(user.wallets[0].walletAddress);
+      }
+    } else {
+      fetchWallets();
+    }
+  }, [user]);
+
+  // Fetch wallet balances when wallet changes
+  useEffect(() => {
+    if (selectedWallet) {
+      fetchWalletBalances();
+    }
+  }, [selectedWallet, fetchWalletBalances]);
+
   const handleWalletChange = (e) => {
-    const idx = e.target.selectedIndex - 1;
-    setWalletIdx(idx);
-    setBalance(dummyWallets[idx]?.[balanceKey] ?? 0);
-    setResult('');
+    setSelectedWallet(e.target.value);
+    setResult("");
+    setError("");
   };
 
-  // Deposit KWH → ETK
-  const handleDeposit = (e) => {
+  // Deposit IDR → IDRS (ON_RAMP)
+  const handleDeposit = async (e) => {
     e.preventDefault();
     if (!depositAmount || Number(depositAmount) <= 0) return;
-    setResult(`✅ Minted ${(Number(depositAmount) * rate).toFixed(2)} ${first_change} for ${depositAmount} ${second_change} (rate 1 ${second_change} = ${rate} ${first_change})`);
-    setDepositAmount('');
+    if (!selectedWallet) {
+      setError("Please select a wallet");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await apiCall("/wallet/idrs-conversion", {
+        method: "POST",
+        body: JSON.stringify({
+          walletAddress: selectedWallet,
+          conversionType: "ON_RAMP",
+          amount: Number(depositAmount),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setResult(
+            `✅ Successfully converted ${depositAmount} ${second_change} to ${data.data.idrsAmount} ${first_change}`
+          );
+          setDepositAmount("");
+          // Refresh balance
+          await fetchWalletBalances();
+        } else {
+          setError(data.message || "Conversion failed");
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Conversion failed");
+      }
+    } catch (error) {
+      console.error("Deposit error:", error);
+      setError("Network error during conversion");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Withdraw ETK → KWH
-  const handleWithdraw = (e) => {
+  // Withdraw IDRS → IDR (OFF_RAMP)
+  const handleWithdraw = async (e) => {
     e.preventDefault();
     if (!withdrawAmount || Number(withdrawAmount) <= 0) return;
-    setResult(`✅ Burned ${withdrawAmount} ${first_change} for ${(Number(withdrawAmount) / rate).toFixed(2)} ${second_change} (rate ${rate} ${first_change} = 1 ${second_change})`);
-    setWithdrawAmount('');
+    if (!selectedWallet) {
+      setError("Please select a wallet");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await apiCall("/wallet/idrs-conversion", {
+        method: "POST",
+        body: JSON.stringify({
+          walletAddress: selectedWallet,
+          conversionType: "OFF_RAMP",
+          amount: Number(withdrawAmount),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setResult(
+            `✅ Successfully converted ${withdrawAmount} ${first_change} to ${data.data.idrAmount} ${second_change}`
+          );
+          setWithdrawAmount("");
+          // Refresh balance
+          await fetchWalletBalances();
+        } else {
+          setError(data.message || "Conversion failed");
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Conversion failed");
+      }
+    } catch (error) {
+      console.error("Withdraw error:", error);
+      setError("Network error during conversion");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-
       <p className="text-base-content/60 mb-2">
-        Withdraw <span className="font-mono">{first_change}</span> &rarr; <span className="font-mono">{second_change}</span> / Deposit <span className="font-mono">{second_change}</span> &rarr; <span className="font-mono">{first_change}</span>
+        Withdraw <span className="font-mono">{first_change}</span> &rarr;{" "}
+        <span className="font-mono">{second_change}</span> / Deposit{" "}
+        <span className="font-mono">{second_change}</span> &rarr;{" "}
+        <span className="font-mono">{first_change}</span>
       </p>
+
       {/* Wallet selector */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-base-content mb-1">Wallet</label>
+        <label className="block text-sm font-medium text-base-content mb-1">
+          Wallet
+        </label>
         <select
           className="select select-bordered w-full"
-          value={walletIdx}
+          value={selectedWallet}
           onChange={handleWalletChange}
         >
-          <option disabled>Pilih wallet</option>
-          {dummyWallets.map((w, i) => (
-            <option key={w.address} value={i}>
-              {w.address}
+          <option value="" disabled>
+            Select wallet
+          </option>
+          {wallets.map((wallet) => (
+            <option key={wallet.walletAddress} value={wallet.walletAddress}>
+              {wallet.walletName} ({wallet.walletAddress.slice(0, 6)}...
+              {wallet.walletAddress.slice(-4)})
             </option>
           ))}
         </select>
       </div>
-      {/* ETK Balance & Refresh */}
-      <div className="mb-6 flex items-center gap-4">
+
+      {/* Balance Display */}
+      <div className="mb-6 grid grid-cols-2 gap-4">
         <div className="bg-base-200 rounded-lg px-4 py-2 flex flex-col items-center">
-          <span className="text-xs text-base-content/60">Your {first_change} Balance</span>
-          <span className="font-bold text-primary text-lg font-mono" id="energy-balance">
-            {loading
-              ? <span className="loading loading-spinner loading-xs"></span>
-              : balance.toLocaleString("id-ID", { minimumFractionDigits: 2 })}
+          <span className="text-xs text-base-content/60">ETK Balance</span>
+          <span className="font-bold text-primary text-lg font-mono">
+            {loading ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              balances.ETK.toLocaleString("id-ID", { minimumFractionDigits: 2 })
+            )}
           </span>
         </div>
+        <div className="bg-base-200 rounded-lg px-4 py-2 flex flex-col items-center">
+          <span className="text-xs text-base-content/60">IDRS Balance</span>
+          <span className="font-bold text-secondary text-lg font-mono">
+            {loading ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              balances.IDRS.toLocaleString("id-ID", {
+                minimumFractionDigits: 2,
+              })
+            )}
+          </span>
+        </div>
+      </div>
+
+      <div className="mb-4 flex justify-between items-center">
+        <span className="text-sm text-base-content/60">
+          Current Rate: 1 {second_change} = {rate} {first_change}
+        </span>
         <button
-          className="btn btn-xs btn-outline btn-primary ml-2"
+          className="btn btn-xs btn-outline btn-primary"
           type="button"
-          onClick={refreshBalance}
-          disabled={loading}
+          onClick={fetchWalletBalances}
+          disabled={loading || !selectedWallet}
         >
-          Refresh
+          {loading ? "Loading..." : "Refresh"}
         </button>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="alert alert-error mb-4">
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b mb-4">
         <button
-          className={`flex-1 py-2 text-center font-semibold border-b-2 transition-all ${tab === 'deposit' ? 'border-primary text-primary' : 'border-transparent text-base-content/60 hover:text-primary'}`}
+          className={`flex-1 py-2 text-center font-semibold border-b-2 transition-all ${
+            tab === "deposit"
+              ? "border-primary text-primary"
+              : "border-transparent text-base-content/60 hover:text-primary"
+          }`}
           type="button"
-          onClick={() => { setTab('deposit'); setResult(''); }}
+          onClick={() => {
+            setTab("deposit");
+            setResult("");
+            setError("");
+          }}
         >
-          Deposit
+          Deposit (ON-RAMP)
         </button>
         <button
-          className={`flex-1 py-2 text-center font-semibold border-b-2 transition-all ${tab === 'withdraw' ? 'border-primary text-primary' : 'border-transparent text-base-content/60 hover:text-primary'}`}
+          className={`flex-1 py-2 text-center font-semibold border-b-2 transition-all ${
+            tab === "withdraw"
+              ? "border-primary text-primary"
+              : "border-transparent text-base-content/60 hover:text-primary"
+          }`}
           type="button"
-          onClick={() => { setTab('withdraw'); setResult(''); }}
+          onClick={() => {
+            setTab("withdraw");
+            setResult("");
+            setError("");
+          }}
         >
-          Withdraw
+          Withdraw (OFF-RAMP)
         </button>
       </div>
+
       {/* Deposit Panel */}
-      {tab === 'deposit' && (
+      {tab === "deposit" && (
         <form className="space-y-4" onSubmit={handleDeposit}>
           <div>
-            <label className="block font-medium mb-1">Amount ({second_change})</label>
+            <label className="block font-medium mb-1">
+              Amount ({second_change})
+            </label>
             <input
               type="number"
               min="0.01"
               step="0.01"
               className="input input-bordered w-full"
               required
-              placeholder="e.g. 1.00"
+              placeholder="e.g. 10000"
               value={depositAmount}
-              onChange={e => setDepositAmount(e.target.value)}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              disabled={loading || !selectedWallet}
             />
             <div className="text-xs text-base-content/60 mt-1">
-              Receive: <span className="font-mono">{depositAmount ? (Number(depositAmount) * rate).toFixed(2) : '0.00'} {first_change}</span> (rate 1 {second_change} = {rate} {first_change})
+              Receive:{" "}
+              <span className="font-mono">
+                {depositAmount
+                  ? (Number(depositAmount) * rate).toFixed(2)
+                  : "0.00"}{" "}
+                {first_change}
+              </span>
             </div>
           </div>
           <button
             type="submit"
             className="w-full btn btn-primary"
+            disabled={loading || !selectedWallet || !depositAmount}
           >
-            Deposit (Mint {first_change})
+            {loading ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Processing...
+              </>
+            ) : (
+              `Deposit (Mint ${first_change})`
+            )}
           </button>
         </form>
       )}
+
       {/* Withdraw Panel */}
-      {tab === 'withdraw' && (
+      {tab === "withdraw" && (
         <form className="space-y-4" onSubmit={handleWithdraw}>
           <div>
-            <label className="block font-medium mb-1">Amount ({first_change})</label>
+            <label className="block font-medium mb-1">
+              Amount ({first_change})
+            </label>
             <input
               type="number"
               min="0.01"
               step="0.01"
               className="input input-bordered w-full"
               required
-              placeholder="e.g. 1.00"
+              placeholder="e.g. 10000"
               value={withdrawAmount}
-              onChange={e => setWithdrawAmount(e.target.value)}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              disabled={loading || !selectedWallet}
             />
             <div className="text-xs text-base-content/60 mt-1">
-              Receive: <span className="font-mono">{withdrawAmount ? (Number(withdrawAmount) / rate).toFixed(2) : '0.00'} {second_change}</span> (rate {rate} {first_change} = 1 {second_change})
+              Receive:{" "}
+              <span className="font-mono">
+                {withdrawAmount
+                  ? (Number(withdrawAmount) / rate).toFixed(2)
+                  : "0.00"}{" "}
+                {second_change}
+              </span>
             </div>
           </div>
           <button
             type="submit"
             className="w-full btn btn-primary"
+            disabled={
+              loading ||
+              !selectedWallet ||
+              !withdrawAmount ||
+              balances.IDRS < Number(withdrawAmount)
+            }
           >
-            Withdraw (Burn {first_change})
+            {loading ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Processing...
+              </>
+            ) : (
+              `Withdraw (Burn ${first_change})`
+            )}
           </button>
+          {balances.IDRS < Number(withdrawAmount) && withdrawAmount && (
+            <div className="text-xs text-error mt-1">
+              Insufficient {first_change} balance
+            </div>
+          )}
         </form>
       )}
+
       {/* Result */}
       {result && (
         <div className="alert alert-success mt-6 shadow-sm">
           <span>{result}</span>
         </div>
       )}
+
       {/* Info tambahan */}
       <div className="mt-6 text-xs text-base-content/60">
-        <div>⚡️ Conversion fee: <span className="font-mono">0.5%</span> | Est. block time: <span className="font-mono">~5s</span></div>
-        <div>🔒 All transactions are secured and auditable.</div>
+        <div>
+          ⚡️ Exchange rate: <span className="font-mono">1:1 (No fees)</span> |
+          Est. block time: <span className="font-mono">~5s</span>
+        </div>
+        <div>🔒 All transactions are secured on blockchain and auditable.</div>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default Conversion
+export default Conversion;

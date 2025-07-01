@@ -8,7 +8,11 @@ import Datagrid from "../../components/datagrid/Datagrid.jsx";
 import indonesiaGeo from "../../components/charts/helper/geojson/gadm41_IDN_1.json";
 const jawaProvinces = ["ID.JK", "ID.JR", "ID.BT", "ID.JT", "ID.YO", "ID.JI"];
 
-// Dummy data untuk P2P Energy Trading
+// Dashboard.jsx - ADMIN/GLOBAL DASHBOARD
+// This dashboard shows platform-wide statistics and is intended for admin users
+// For user-specific dashboard, see DashboardUser.jsx which uses /dashboard APIs
+
+// Dummy data untuk P2P Energy Trading - Platform Wide Statistics
 const stats = [
   { label: "Total ETK", value: "12,500" },
   { label: "Total IDRS", value: "Rp 85.000.000" },
