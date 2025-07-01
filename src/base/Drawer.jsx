@@ -37,22 +37,22 @@ const Drawer = () => {
         <ul className="menu rounded-box w-auto">
           {!isAuthenticated ? (
             <>
-            <Link to="/">
-              <li className="mb-1">
-                <span className="flex items-center gap-2">
-                  <HomeIcon className="size-5 text-primary" />
-                  Home
-                </span>
-              </li>
-            </Link>
-            <Link to="/dashboard">
+              <Link to="/">
+                <li className="mb-1">
+                  <span className="flex items-center gap-2">
+                    <HomeIcon className="size-5 text-primary" />
+                    Home
+                  </span>
+                </li>
+              </Link>
+              {/* <Link to="/dashboard">
                 <li className="mb-1">
                   <span className="flex items-center gap-2">
                     <HomeIcon className="size-5 text-primary" />
                     Dashboard
                   </span>
                 </li>
-              </Link>
+              </Link> */}
             </>
           ) : (
             () => null

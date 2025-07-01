@@ -58,10 +58,20 @@ const OrderBookDetailed = ({
         }),
         {
           text: order.statusOnChain,
-          level: order.statusOnChain === "OPEN" ? 2 : order.statusOnChain === "FILLED" ? 3 : 1,
+          level:
+            order.statusOnChain === "OPEN"
+              ? 2
+              : order.statusOnChain === "FILLED"
+              ? 3
+              : 1,
           decorator: {
             status: {
-              type: order.statusOnChain === "OPEN" ? "info" : order.statusOnChain === "FILLED" ? "success" : "warning",
+              type:
+                order.statusOnChain === "OPEN"
+                  ? "info"
+                  : order.statusOnChain === "FILLED"
+                  ? "success"
+                  : "warning",
               badge: true,
             },
           },
@@ -73,7 +83,9 @@ const OrderBookDetailed = ({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        user?.wallets?.some((wallet) => wallet.walletAddress === order.walletAddress) && order.statusOnChain === "OPEN" ? (
+        user?.wallets?.some(
+          (wallet) => wallet.walletAddress === order.walletAddress
+        ) && order.statusOnChain === "OPEN" ? (
           <button
             className="btn btn-sm btn-error"
             onClick={() => cancelOrder(order.orderId, isBuyOrder)}
@@ -116,10 +128,20 @@ const OrderBookDetailed = ({
         }),
         {
           text: order.statusOnChain,
-          level: order.statusOnChain === "OPEN" ? 2 : order.statusOnChain === "FILLED" ? 3 : 1,
+          level:
+            order.statusOnChain === "OPEN"
+              ? 2
+              : order.statusOnChain === "FILLED"
+              ? 3
+              : 1,
           decorator: {
             status: {
-              type: order.statusOnChain === "OPEN" ? "info" : order.statusOnChain === "FILLED" ? "success" : "warning",
+              type:
+                order.statusOnChain === "OPEN"
+                  ? "info"
+                  : order.statusOnChain === "FILLED"
+                  ? "success"
+                  : "warning",
               badge: true,
             },
           },
@@ -131,7 +153,9 @@ const OrderBookDetailed = ({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        user?.wallets?.some((wallet) => wallet.walletAddress === order.walletAddress) && order.statusOnChain === "OPEN" ? (
+        user?.wallets?.some(
+          (wallet) => wallet.walletAddress === order.walletAddress
+        ) && order.statusOnChain === "OPEN" ? (
           <button
             className="btn btn-sm btn-error"
             onClick={() => cancelOrder(order.orderId, isBuyOrder)}
