@@ -9,7 +9,7 @@ const MetricCard = ({
   flow,
   description
 }) => (
-  <div className="card border-2 border-base-200 p-6 flex flex-col gap-2">
+  <div className="card border-2 border-base-300 p-6 flex flex-col gap-2">
     <div className="flex items-center gap-2 mb-2">
       {icon}
       <span className="font-semibold">{label}</span>

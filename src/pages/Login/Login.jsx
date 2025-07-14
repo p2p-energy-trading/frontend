@@ -50,7 +50,11 @@ const Login = () => {
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-primary">EnerLink</h1>
+            <Link to="/" className="inline-block">
+              <h1 className="text-3xl font-bold text-primary hover:text-primary/80 transition-colors cursor-pointer">
+                EnerchainX
+              </h1>
+            </Link>
             <p className="text-base-content/70 mt-2">
               P2P Energy Trading Platform
             </p>
@@ -113,14 +117,11 @@ const Login = () => {
             <div className="form-control mt-6">
               <button
                 type="submit"
-                className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
+                className="btn btn-primary w-full"
                 disabled={loading}
               >
                 {loading ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Signing in...
-                  </>
+                  <span className="loading loading-spinner loading-xs"></span>
                 ) : (
                   "Sign in"
                 )}

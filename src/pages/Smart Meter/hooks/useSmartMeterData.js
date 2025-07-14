@@ -84,7 +84,7 @@ export default function useSmartMeterData() {
     }, 5000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line
+     
   }, [battery, energyHistory]);
 
   return {

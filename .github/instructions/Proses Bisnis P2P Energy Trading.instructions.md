@@ -1,12 +1,12 @@
 ---
-applyTo: '**'
+applyTo: "**"
 ---
 
-# EnerLink P2P Energy Trading System - Domain Knowledge & References
+# EnerchainX P2P Energy Trading System - Domain Knowledge & References
 
 ## System Overview
 
-EnerLink is a peer-to-peer energy trading platform that enables prosumers (PLTS Atap owners) to trade surplus energy using three core technologies:
+EnerchainX is a peer-to-peer energy trading platform that enables prosumers (PLTS Atap owners) to trade surplus energy using three core technologies:
 
 - **IoT**: Smart meters with comprehensive monitoring and control capabilities
 - **Private Ethereum Blockchain**: Secure, automated transactions with tokenization
@@ -409,4 +409,4 @@ Heartbeat messages are sent periodically (typically every 30-60 seconds) to indi
 - Settlement trigger customization
 - Component-specific settings
 
-This domain knowledge serves as the foundation for understanding the EnerLink system architecture, business processes, and technical implementation details.
+This domain knowledge serves as the foundation for understanding the EnerchainX system architecture, business processes, and technical implementation details.

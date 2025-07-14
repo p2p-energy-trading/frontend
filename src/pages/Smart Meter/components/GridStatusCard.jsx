@@ -3,7 +3,7 @@ import { chartOptionsGrid } from "../helper/chartOptions";
 import StatusDot from "./StatusDot";
 
 const GridStatusCard = ({ gridStatus, grid, gridChartData }) => (
-  <div className="card border-2 border-base-200  p-6 flex flex-col gap-2  mt-2">
+  <div className="card border-2 border-base-300  p-6 flex flex-col gap-2  mt-2">
     <div className="flex items-center gap-2 mb-2">
       <svg
         className="w-6 h-6 text-primary"

@@ -73,7 +73,7 @@ export const historyBarOptions = {
       ticks: { maxTicksLimit: 3 },
       display: true,
       beginAtZero: true,
-      border: { display: false, dash: [6, 6]},
+      border: { display: false, dash: [6, 6] },
       grid: {
         display: true,
         drawTicks: false,
@@ -85,4 +85,37 @@ export const historyBarOptions = {
   },
   maintainAspectRatio: false,
   animation: true,
+};
+
+export const chartOptionsBattery = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      enabled: true,
+      mode: "index",
+      intersect: false,
+      callbacks: {
+        label: function (context) {
+          if (context.parsed.y === 0) return null;
+          return `${context.dataset.label}: ${context.parsed.y}`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      display: true,
+      ticks: { maxTicksLimit: 3, align: "start" },
+      grid: { display: false },
+      border: { display: false },
+    },
+    y: {
+      display: true,
+      beginAtZero: false, // Allow negative values to be displayed
+      grid: { display: false },
+      border: { display: false },
+    },
+  },
 };

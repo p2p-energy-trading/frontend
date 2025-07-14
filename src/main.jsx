@@ -5,12 +5,14 @@ import App from "./App.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import SmartMeterGuard from "./components/SmartMeterGuard.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 // Import components
 import Homepage from "./pages/Home/Homepage.jsx";
 import Login from "./pages/Login/Login.jsx";
 import Register from "./pages/Register/Register.jsx";
+import SmartMeterSetup from "./pages/Setup/SmartMeterSetup.jsx";
 import Trade from "./pages/Trade/Trade.jsx";
 import PowerConversion from "./pages/Energy Conversion/PowerConversion.jsx";
 import BalanceConversion from "./pages/Balance Conversion/BalanceConversion.jsx";
@@ -29,6 +31,14 @@ const router = createBrowserRouter([
     element: <Register />,
   },
   {
+    path: "/smart-meter-setup",
+    element: (
+      <ProtectedRoute>
+        <SmartMeterSetup />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/",
     element: <App />,
     children: [
@@ -44,7 +54,9 @@ const router = createBrowserRouter([
         path: "/dashboard-user",
         element: (
           <ProtectedRoute>
-            <DashboardUser />
+            <SmartMeterGuard>
+              <DashboardUser />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },
@@ -52,7 +64,9 @@ const router = createBrowserRouter([
         path: "/trade",
         element: (
           <ProtectedRoute>
-            <Trade />
+            <SmartMeterGuard>
+              <Trade />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },
@@ -60,7 +74,9 @@ const router = createBrowserRouter([
         path: "/power-conversion",
         element: (
           <ProtectedRoute>
-            <PowerConversion />
+            <SmartMeterGuard>
+              <PowerConversion />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },
@@ -68,7 +84,9 @@ const router = createBrowserRouter([
         path: "/balance-conversion",
         element: (
           <ProtectedRoute>
-            <BalanceConversion />
+            <SmartMeterGuard>
+              <BalanceConversion />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },
@@ -76,7 +94,9 @@ const router = createBrowserRouter([
         path: "/smart-meter",
         element: (
           <ProtectedRoute>
-            <SmartMeter />
+            <SmartMeterGuard>
+              <SmartMeter />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },
@@ -84,7 +104,9 @@ const router = createBrowserRouter([
         path: "/wallet",
         element: (
           <ProtectedRoute>
-            <Wallet />
+            <SmartMeterGuard>
+              <Wallet />
+            </SmartMeterGuard>
           </ProtectedRoute>
         ),
       },

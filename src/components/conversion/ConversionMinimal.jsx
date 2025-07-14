@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useAuth } from "../../context/AuthContext";
 import { apiCall } from "../../utils/api";
 
-const ConversionMinimal = ({ first_change, second_change, rate }) => {
-  const { user, refreshUserData } = useAuth();
+const ConversionMinimal = ({ first_change }) => {
   const [selectedWallet, setSelectedWallet] = useState("");
   const [wallets, setWallets] = useState([]);
+  const [primaryWalletAddress, setPrimaryWalletAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
@@ -13,22 +12,66 @@ const ConversionMinimal = ({ first_change, second_change, rate }) => {
   const [settingPrimary, setSettingPrimary] = useState(false);
 
   // Define functions first
-  const fetchWallets = async () => {
+  const fetchProfile = useCallback(async () => {
+    try {
+      const response = await apiCall("/auth/profile");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.profile) {
+          setPrimaryWalletAddress(data.profile.primaryWalletAddress || "");
+          return data.profile.primaryWalletAddress;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+    return null;
+  }, []);
+
+  const fetchWallets = useCallback(async () => {
     try {
       const response = await apiCall("/wallet/list");
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setWallets(data.data);
-          if (data.data.length > 0) {
-            setSelectedWallet(data.data[0].walletAddress);
-          }
+          return data.data;
         }
       }
     } catch (error) {
       console.error("Error fetching wallets:", error);
     }
-  };
+    return [];
+  }, []);
+
+  // Initialize wallet data on component mount
+  const initializeWalletData = useCallback(async () => {
+    try {
+      // Fetch both profile and wallets in parallel
+      const [profilePrimaryWallet, walletsData] = await Promise.all([
+        fetchProfile(),
+        fetchWallets(),
+      ]);
+
+      // Set selected wallet based on primary wallet from profile
+      if (profilePrimaryWallet && walletsData.length > 0) {
+        const primaryWallet = walletsData.find(
+          (wallet) => wallet.walletAddress === profilePrimaryWallet
+        );
+        if (primaryWallet) {
+          setSelectedWallet(primaryWallet.walletAddress);
+        } else {
+          // Fallback to first wallet if primary not found
+          setSelectedWallet(walletsData[0].walletAddress);
+        }
+      } else if (walletsData.length > 0) {
+        // If no primary wallet, use first wallet
+        setSelectedWallet(walletsData[0].walletAddress);
+      }
+    } catch (error) {
+      console.error("Error initializing wallet data:", error);
+    }
+  }, [fetchProfile, fetchWallets]);
 
   const fetchWalletBalances = useCallback(async () => {
     if (!selectedWallet) return;
@@ -47,72 +90,10 @@ const ConversionMinimal = ({ first_change, second_change, rate }) => {
     }
   }, [selectedWallet]);
 
-  // Load wallets on component mount
+  // Load wallets and profile on component mount
   useEffect(() => {
-    if (user?.wallets && user.wallets.length > 0) {
-      setWallets(user.wallets);
-
-      // Only set selectedWallet if it's not already set
-      if (!selectedWallet) {
-        // First priority: use primaryWalletAddress from user profile
-        let defaultWallet = null;
-
-        if (user.primaryWalletAddress) {
-          defaultWallet = user.wallets.find(
-            (wallet) => wallet.walletAddress === user.primaryWalletAddress
-          );
-        }
-
-        // Fallback: find wallet with isPrimary flag or use first wallet
-        if (!defaultWallet) {
-          defaultWallet =
-            user.wallets.find((wallet) => wallet.isPrimary) || user.wallets[0];
-        }
-
-        if (defaultWallet) {
-          setSelectedWallet(defaultWallet.walletAddress);
-        }
-      }
-    } else if (!user?.wallets && !selectedWallet) {
-      fetchWallets();
-    }
-  }, [user, selectedWallet]);
-
-  // Sync wallets state when user.wallets changes (after refreshUserData)
-  // but preserve the selected wallet
-  useEffect(() => {
-    if (user?.wallets && user.wallets.length > 0) {
-      setWallets(user.wallets);
-
-      // Verify that the currently selected wallet still exists
-      if (selectedWallet) {
-        const walletExists = user.wallets.find(
-          (w) => w.walletAddress === selectedWallet
-        );
-        if (!walletExists) {
-          // If selected wallet no longer exists, use primaryWalletAddress or fallback
-          let defaultWallet = null;
-
-          if (user.primaryWalletAddress) {
-            defaultWallet = user.wallets.find(
-              (wallet) => wallet.walletAddress === user.primaryWalletAddress
-            );
-          }
-
-          // Fallback: find wallet with isPrimary flag or use first wallet
-          if (!defaultWallet) {
-            defaultWallet =
-              user.wallets.find((wallet) => wallet.isPrimary) ||
-              user.wallets[0];
-          }
-
-          if (defaultWallet) {
-            setSelectedWallet(defaultWallet.walletAddress);
-          }
-        }
-      }
-    }
-  }, [user?.wallets]);
+    initializeWalletData();
+  }, [initializeWalletData]);
 
   // Fetch wallet balances when wallet changes
   useEffect(() => {
@@ -150,12 +131,8 @@ const ConversionMinimal = ({ first_change, second_change, rate }) => {
 
       if (response.ok) {
         setResult("Primary wallet updated successfully");
-        // Refresh user data to get updated wallet info
-        const refreshResult = await refreshUserData();
-        if (refreshResult.success) {
-          // Update local wallets state with fresh data
-          setWallets(refreshResult.data.wallets || []);
-        }
+        // Refresh wallet data to get updated primary wallet info
+        await initializeWalletData();
         setError("");
       } else {
         const errorData = await response.json();
@@ -208,7 +185,7 @@ const ConversionMinimal = ({ first_change, second_change, rate }) => {
             <option key={wallet.walletAddress} value={wallet.walletAddress}>
               {wallet.walletName} ({wallet.walletAddress.slice(0, 6)}...
               {wallet.walletAddress.slice(-4)})
-              {wallet.walletAddress === user?.primaryWalletAddress
+              {wallet.walletAddress === primaryWalletAddress
                 ? " (Primary)"
                 : ""}
             </option>
@@ -245,6 +222,14 @@ const ConversionMinimal = ({ first_change, second_change, rate }) => {
         >
           {loading ? "Loading..." : "Refresh Balance"}
         </button>
+        {/* <button
+          className="btn btn-xs btn-outline btn-secondary"
+          type="button"
+          onClick={initializeWalletData}
+          disabled={settingPrimary}
+        >
+          {settingPrimary ? "Updating..." : "Refresh Wallets"}
+        </button> */}
       </div>
     </>
   );

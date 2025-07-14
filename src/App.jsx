@@ -1,4 +1,4 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import "./App.css";
 import Drawer from "./base/Drawer";
 import Footer from "./base/Footer";
@@ -11,6 +11,7 @@ function App() {
   const [theme, setTheme] = useState(false);
   const [user, setUser] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
 
   const contextValue = {
     theme,
@@ -20,6 +21,9 @@ function App() {
   };
 
   const handleDrawerToggle = () => setDrawerOpen((prev) => !prev);
+
+  // Check if current route is homepage
+  const isHomepage = location.pathname === "/";
 
   return (
     // Drawer layout for sidebar navigation
@@ -35,7 +39,11 @@ function App() {
         <div className="drawer-content min-h-screen flex flex-col">
           <Navbar />
           <div className="flex-1 z-0">
-            <div className="w-full flex flex-col items-center justify-center h-full flex-1 p-5">
+            <div
+              className={`w-full flex flex-col items-center justify-center h-full flex-1 ${
+                isHomepage ? "" : "p-5"
+              }`}
+            >
               <Outlet />
             </div>
           </div>

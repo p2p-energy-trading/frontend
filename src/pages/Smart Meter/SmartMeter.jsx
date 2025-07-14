@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { BoltIcon } from "@heroicons/react/24/outline";
 import MetricCard from "./components/MetricCard";
 import DeviceInfoApi from "./components/DeviceInfoApi";
@@ -8,12 +8,13 @@ import EnergyHistorySection from "./components/EnergyHistorySection";
 import DeviceControlPanel from "./components/DeviceControlPanel";
 import useSmartMeterApi from "./hooks/useSmartMeterApi";
 import { useChartColors } from "./helper/chartColors";
-import { chartOptions } from "./helper/chartOptions";
+import { chartOptions, chartOptionsBattery } from "./helper/chartOptions";
 import {
   getSolarChartData,
   getConsumeChartData,
   getGridChartData,
   getHistoryBarData,
+  getBatteryChartData,
 } from "./helper/chartData";
 import { Line } from "react-chartjs-2";
 import {
@@ -29,6 +30,7 @@ import {
   Filler,
 } from "chart.js";
 import { AppContext } from "../../context/context";
+import { apiCall } from "../../utils/api";
 
 ChartJS.register(
   CategoryScale,
@@ -52,7 +54,6 @@ const SmartMeter = () => {
     solar,
     consume,
     battery,
-    batteryPercent,
     grid,
     gridStatus,
     energyHistory,
@@ -66,6 +67,38 @@ const SmartMeter = () => {
     error,
     refreshData,
   } = useSmartMeterApi();
+
+  // Separate state for energy history data
+  const [energyHistoryData, setEnergyHistoryData] = useState([]);
+  const [energyHistoryLoading, setEnergyHistoryLoading] = useState(false);
+
+  // Fetch energy history data from separate API
+  const fetchEnergyHistory = useCallback(async () => {
+    try {
+      setEnergyHistoryLoading(true);
+      const response = await apiCall("/energy/history/hourly?hours=12");
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setEnergyHistoryData(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching energy history:", error);
+    } finally {
+      setEnergyHistoryLoading(false);
+    }
+  }, []);
+
+  // Fetch energy history on component mount and periodically
+  useEffect(() => {
+    fetchEnergyHistory();
+
+    // Refresh energy history every 60 seconds
+    const interval = setInterval(fetchEnergyHistory, 60000);
+    return () => clearInterval(interval);
+  }, [fetchEnergyHistory]);
 
   const { theme } = useContext(AppContext); // listen theme from context
 
@@ -108,20 +141,50 @@ const SmartMeter = () => {
       colorBaseContent,
     ]
   );
-  const historyBarData = useMemo(
+  const batteryChartData = useMemo(
+    () =>
+      getBatteryChartData(
+        energyHistory,
+        batteryStatus,
+        colorSuccess,
+        colorError,
+        colorBaseContent
+      ),
+    [colorSuccess, colorError, colorBaseContent, batteryStatus, energyHistory]
+  );
+
+  // Process energy history data for EnergyHistorySection
+  const processedEnergyHistory = useMemo(() => {
+    return energyHistoryData.map((item) => ({
+      time: item.hour,
+      solar: item.solar || 0,
+      usage: item.consumption || 0,
+      grid: item.net || 0,
+      battery: item.battery || 0,
+    }));
+  }, [energyHistoryData]);
+
+  // Create chart data for EnergyHistorySection
+  const energyHistoryBarData = useMemo(
     () =>
       getHistoryBarData(
-        energyHistory,
+        processedEnergyHistory,
         colorWarning,
         colorError,
         colorAccent,
         colorSuccess
       ),
-    [energyHistory, colorWarning, colorError, colorAccent, colorSuccess]
+    [
+      processedEnergyHistory,
+      colorWarning,
+      colorError,
+      colorAccent,
+      colorSuccess,
+    ]
   );
 
   return (
-    <div className="w-full card card-border border-2 border-base-200 bg-base-100 p-8 space-y-8">
+    <div className="w-full card card-border border-2 border-base-300 bg-base-100 p-6 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -150,8 +213,86 @@ const SmartMeter = () => {
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <span className="loading loading-spinner loading-lg"></span>
+        <div className="space-y-8">
+          {/* Device Info Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300">
+            <div className="card-body">
+              <div className="skeleton h-6 w-32 mb-4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <div className="skeleton h-4 w-24 mb-2"></div>
+                  <div className="skeleton h-8 w-full"></div>
+                </div>
+                <div>
+                  <div className="skeleton h-4 w-20 mb-2"></div>
+                  <div className="skeleton h-6 w-32"></div>
+                </div>
+                <div>
+                  <div className="skeleton h-4 w-28 mb-2"></div>
+                  <div className="skeleton h-6 w-24"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Metrics Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+            {[...Array(3)].map((_, index) => (
+              <div
+                key={index}
+                className="card bg-base-100 border-2 border-base-300"
+              >
+                <div className="card-body">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="skeleton h-6 w-6 rounded"></div>
+                    <div className="skeleton h-5 w-32"></div>
+                  </div>
+                  <div className="skeleton h-8 w-20 mb-2"></div>
+                  <div className="skeleton h-16 w-full mb-4"></div>
+                  <div className="skeleton h-4 w-40"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Grid Status Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300">
+            <div className="card-body">
+              <div className="skeleton h-6 w-28 mb-4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="skeleton h-4 w-32"></div>
+                  <div className="skeleton h-6 w-24"></div>
+                  <div className="skeleton h-4 w-28"></div>
+                  <div className="skeleton h-6 w-20"></div>
+                </div>
+                <div className="skeleton h-48 w-full"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Device Control Panel Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300">
+            <div className="card-body">
+              <div className="skeleton h-6 w-40 mb-4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="skeleton h-4 w-24"></div>
+                    <div className="skeleton h-10 w-full"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Energy History Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300">
+            <div className="card-body">
+              <div className="skeleton h-6 w-32 mb-4"></div>
+              <div className="skeleton h-64 w-full"></div>
+            </div>
+          </div>
         </div>
       ) : (
         <>
@@ -239,10 +380,18 @@ const SmartMeter = () => {
             />
             <BatteryCard
               battery={battery}
-              batteryPercent={batteryPercent}
               batteryStatus={batteryStatus}
               batteryFlow={batteryFlow}
-              description={"Battery status and flow"}
+              description={"Battery flow"}
+              chart={
+                <div className="w-full h-16 relative">
+                  <Line
+                    options={chartOptionsBattery}
+                    data={batteryChartData}
+                    height={48}
+                  />
+                </div>
+              }
             />
           </div>
 
@@ -264,8 +413,8 @@ const SmartMeter = () => {
 
           {/* Energy History */}
           <EnergyHistorySection
-            energyHistory={energyHistory}
-            historyBarData={historyBarData}
+            historyBarData={energyHistoryBarData}
+            loading={energyHistoryLoading}
           />
         </>
       )}

@@ -30,7 +30,7 @@ const Drawer = () => {
         {/* App name/title at the top */}
         <div className="flex items-center justify-center h-16">
           <h1 className="text-[1.4rem] font-bold cursor-pointer">
-            <Link to="/">EnerLink</Link>
+            <Link to="/">EnerchainX</Link>
           </h1>
         </div>
         {/* Navigation links */}

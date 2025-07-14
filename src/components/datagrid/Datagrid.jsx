@@ -216,7 +216,7 @@ const Datagrid = ({
         </div>
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
           {exportButton && (
-            <div className="dropdown dropdown-center">
+            <div className="dropdown dropdown-end">
               <div
                 tabIndex={0}
                 role="button"
@@ -232,7 +232,7 @@ const Datagrid = ({
               </div>
               <ul
                 tabIndex={0}
-                className="dropdown-content menu border-2 border-base-200 bg-base-100 rounded-box z-10 w-44 p-2 shadow"
+                className="dropdown-content menu border-2 border-base-300 bg-base-100 rounded-box z-10 w-44 p-2 shadow"
               >
                 <li>
                   <a
@@ -283,7 +283,7 @@ const Datagrid = ({
       </div>
       {/* Table */}
       <div
-        className="overflow-auto rounded-box bg-base-100 border-base-200 border-2 w-full h-auto"
+        className="overflow-auto rounded-box bg-base-100 border-base-300 border-2 w-full h-auto"
         style={{ maxWidth: "100%", maxHeight: "100%" }}
       >
         <table className="table min-w-full">

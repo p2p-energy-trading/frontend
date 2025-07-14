@@ -27,9 +27,9 @@ const OrderBook = ({ orderbook, loading }) => {
   const { buyOrders = [], sellOrders = [], summary } = orderbook;
   const maxRows = 8;
 
-  // Sort orders - sell orders descending (highest first), buy orders descending (highest first)
+  // Sort orders - sell orders ascending (lowest first), buy orders descending (highest first)
   const sortedSellOrders = [...sellOrders]
-    .sort((a, b) => b.priceIdrsPerEtk - a.priceIdrsPerEtk)
+    .sort((a, b) => a.priceIdrsPerEtk - b.priceIdrsPerEtk)
     .slice(0, maxRows);
   const sortedBuyOrders = [...buyOrders]
     .sort((a, b) => b.priceIdrsPerEtk - a.priceIdrsPerEtk)

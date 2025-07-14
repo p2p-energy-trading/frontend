@@ -192,6 +192,24 @@ const OrderBookDetailed = ({
     );
   }
 
+  const buyOrdersTableOptions = {
+    numberOfRows: Math.max(1, buyOrdersData.length), // Dynamic height based on data
+    pagination: false, // Disable pagination to show all rows
+    itemsPerPage: false, // Hide items per page selector
+    actionButtons: false, // Hide action buttons
+    exportButton: true, // Keep export functionality
+    search: false, // Hide search since we're showing all data
+  };
+
+  const sellOrdersTableOptions = {
+    numberOfRows: Math.max(1, sellOrdersData.length), // Dynamic height based on data
+    pagination: false, // Disable pagination to show all rows
+    itemsPerPage: false, // Hide items per page selector
+    actionButtons: false, // Hide action buttons
+    exportButton: true, // Keep export functionality
+    search: false, // Hide search since we're showing all data
+  };
+
   return (
     <div className="space-y-6">
       {/* Buy Orders (Bids) */}
@@ -206,8 +224,7 @@ const OrderBookDetailed = ({
           <Datagrid
             tableData={buyOrdersData}
             tableHeaderData={buyOrdersHeaderData}
-            itemsPerPageOptions={[5, 10, 20]}
-            defaultItemsPerPage={5}
+            tableOptions={buyOrdersTableOptions}
           />
         ) : (
           <div className="text-center py-4 text-base-content/60 bg-base-200 rounded-lg">
@@ -228,8 +245,7 @@ const OrderBookDetailed = ({
           <Datagrid
             tableData={sellOrdersData}
             tableHeaderData={sellOrdersHeaderData}
-            itemsPerPageOptions={[5, 10, 20]}
-            defaultItemsPerPage={5}
+            tableOptions={sellOrdersTableOptions}
           />
         ) : (
           <div className="text-center py-4 text-base-content/60 bg-base-200 rounded-lg">

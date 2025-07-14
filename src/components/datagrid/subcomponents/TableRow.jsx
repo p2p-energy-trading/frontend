@@ -55,7 +55,8 @@ const TableRow = forwardRef(
               return (
                 <td key={colIdx} className="py-2 px-2" style={cellStyle}>
                   <a
-                    href={item.text || "#"}
+                    href={item.href || "#"}
+                    target={item.target || "_self"}
                     className="text-primary hover:underline"
                     rel="noopener noreferrer"
                   >
@@ -113,6 +114,24 @@ const TableRow = forwardRef(
                       <p className="">{item.text}</p>
                     )}
                   </div>
+                </td>
+              );
+            }
+
+            if (item.decorator === "button") {
+              return (
+                <td key={colIdx} className="py-2 px-2" style={cellStyle}>
+                  <button
+                    className={item.className || "btn btn-sm"}
+                    onClick={item.onClick}
+                    disabled={item.disabled || false}
+                  >
+                    {item.loading ? (
+                      <span className="loading loading-spinner loading-xs"></span>
+                    ) : (
+                      item.text
+                    )}
+                  </button>
                 </td>
               );
             }

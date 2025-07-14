@@ -225,8 +225,8 @@ const Dashboard = () => {
             series={energyGenBurnSeries}
           />
           <div className="text-xs text-base-content/60 mt-2">
-            Grafik perbandingan energi (ETK) yang dihasilkan dan
-            diburning/withdrawal oleh seluruh user setiap bulan di platform.
+            Energy generation vs consumption chart (ETK) showing the
+            burning/withdrawal by all users monthly on the platform.
           </div>
         </div>
       </div>
@@ -235,8 +235,8 @@ const Dashboard = () => {
           <h2 className="card-title mb-2">Monthly Trading Volume (IDRS)</h2>
           <BarChart data={monthlyVolumeData} color="primary" />
           <div className="text-xs text-base-content/60 mt-2">
-            Total volume perdagangan IDRS (Indonesian Rupiah Stablecoin) di
-            platform setiap bulan.
+            Total IDRS (Indonesian Rupiah Stablecoin) trading volume on platform
+            setiap bulan.
           </div>
         </div>
       </div>
@@ -245,8 +245,8 @@ const Dashboard = () => {
           <h2 className="card-title mb-2">Monthly Trading Volume (ETK)</h2>
           <BarChart data={monthlyVolumeETKData} color="secondary" />
           <div className="text-xs text-base-content/60 mt-2">
-            Total volume perdagangan ETK (Energy Token, 1 ETK = 1 kWh) di
-            platform setiap bulan.
+            Total ETK (Energy Token, 1 ETK = 1 kWh) trading volume on platform
+            setiap bulan.
           </div>
         </div>
       </div>
@@ -315,7 +315,7 @@ const Dashboard = () => {
             valueKey="etk"
           />
           <div className="text-xs text-base-content/60 mt-2">
-            Peta persebaran total ETK (energi) yang dihasilkan di setiap
+            Map showing the distribution of total ETK (energy) generated in each
             provinsi di Pulau Jawa.
           </div>
         </div>
@@ -331,9 +331,8 @@ const Dashboard = () => {
             tableOptions={tableOptions}
           />
           <div className="text-xs text-base-content/60 mt-2">
-            Daftar transaksi ETK terbaru yang terjadi di platform, menampilkan
-            jumlah ETK, harga per ETK (IDRS), dan total IDRS pada setiap
-            transaksi.
+            List of recent ETK transactions on the platform, showing ETK amount,
+            price per ETK (IDRS), and total IDRS for each transaction.
           </div>
         </div>
       </div>

@@ -1,31 +1,40 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { apiCall } from "../../utils/api";
+import { WalletIcon } from "@heroicons/react/24/outline";
 
 const Wallet = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [action, setAction] = useState("create");
   const [privateKey, setPrivateKey] = useState("");
   const [walletName, setWalletName] = useState("");
   const [wallets, setWallets] = useState([]);
+  const [primaryWalletAddress, setPrimaryWalletAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Fetch wallets from API or use cached data from user profile
+  // Fetch profile to get primary wallet address
+  const fetchProfile = useCallback(async () => {
+    try {
+      const response = await apiCall("/auth/profile");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.profile) {
+          setPrimaryWalletAddress(data.profile.primaryWalletAddress || "");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  }, []);
+
+  // Fetch wallets from wallet list endpoint
   const fetchWallets = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      // First try to use wallets from user profile if available
-      if (user?.wallets && user.wallets.length > 0) {
-        setWallets(user.wallets);
-        setLoading(false);
-        return;
-      }
-
-      // Fallback to API call if no wallets in profile
       const response = await apiCall("/wallet/list");
 
       if (response.ok) {
@@ -33,19 +42,25 @@ const Wallet = () => {
         if (data.success) {
           setWallets(data.data);
         } else {
-          setError(data.message || "Failed to fetch wallets");
+          const errorMessage = data.message || "Failed to fetch wallets";
+          setError(errorMessage);
+          setTimeout(() => setError(""), 3000);
         }
       } else {
         const errorData = await response.json();
-        setError(errorData.message || "Failed to fetch wallets");
+        const errorMessage = errorData.message || "Failed to fetch wallets";
+        setError(errorMessage);
+        setTimeout(() => setError(""), 3000);
       }
     } catch (error) {
       console.error("Error fetching wallets:", error);
-      setError("Network error while fetching wallets");
+      const errorMessage = "Network error while fetching wallets";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
     } finally {
       setLoading(false);
     }
-  }, [user?.wallets]);
+  }, []);
 
   // Create new wallet
   const createWallet = async (walletName) => {
@@ -61,8 +76,9 @@ const Wallet = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Refresh wallet list
+          // Refresh wallet list and profile
           await fetchWallets();
+          await fetchProfile();
           return { success: true, message: data.message };
         } else {
           return {
@@ -98,8 +114,9 @@ const Wallet = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Refresh wallet list
+          // Refresh wallet list and profile
           await fetchWallets();
+          await fetchProfile();
           return { success: true, message: data.message };
         } else {
           return {
@@ -131,15 +148,22 @@ const Wallet = () => {
         const data = await response.json();
         if (data.success) {
           await fetchWallets();
+          await fetchProfile();
           setSuccess(data.message);
           setTimeout(() => setSuccess(""), 3000);
           return { success: true };
         }
       }
-      return { success: false, error: "Failed to activate wallet" };
+      const errorMessage = "Failed to activate wallet";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     } catch (error) {
       console.error("Error activating wallet:", error);
-      return { success: false, error: "Network error" };
+      const errorMessage = "Network error";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -154,15 +178,22 @@ const Wallet = () => {
         const data = await response.json();
         if (data.success) {
           await fetchWallets();
+          await fetchProfile();
           setSuccess(data.message);
           setTimeout(() => setSuccess(""), 3000);
           return { success: true };
         }
       }
-      return { success: false, error: "Failed to deactivate wallet" };
+      const errorMessage = "Failed to deactivate wallet";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     } catch (error) {
       console.error("Error deactivating wallet:", error);
-      return { success: false, error: "Network error" };
+      const errorMessage = "Network error";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -176,24 +207,33 @@ const Wallet = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          await fetchProfile(); // Refresh profile to get updated primary wallet
+          await fetchWallets(); // Refresh wallet list
           setSuccess(data.message);
           setTimeout(() => setSuccess(""), 3000);
           return { success: true };
         }
       }
-      return { success: false, error: "Failed to set primary wallet" };
+      const errorMessage = "Failed to set primary wallet";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     } catch (error) {
       console.error("Error setting primary wallet:", error);
-      return { success: false, error: "Network error" };
+      const errorMessage = "Network error";
+      setError(errorMessage);
+      setTimeout(() => setError(""), 3000);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Load wallets on component mount or when user data changes
+  // Load wallets and profile on component mount
   useEffect(() => {
     if (token) {
+      fetchProfile();
       fetchWallets();
     }
-  }, [token, fetchWallets]);
+  }, [token, fetchProfile, fetchWallets]);
 
   const handleActionChange = (e) => {
     setAction(e.target.value);
@@ -211,6 +251,7 @@ const Wallet = () => {
     if (action === "create") {
       if (!walletName.trim()) {
         setError("Wallet name is required");
+        setTimeout(() => setError(""), 3000);
         return;
       }
 
@@ -219,13 +260,15 @@ const Wallet = () => {
         setWalletName("");
         setAction("create");
         setSuccess(result.message || "Wallet created successfully");
-        setTimeout(() => setSuccess(""), 5000);
+        setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result.error);
+        setTimeout(() => setError(""), 3000);
       }
     } else if (action === "import") {
       if (!privateKey.trim()) {
         setError("Private key is required");
+        setTimeout(() => setError(""), 3000);
         return;
       }
 
@@ -235,9 +278,10 @@ const Wallet = () => {
         setWalletName("");
         setAction("create");
         setSuccess(result.message || "Wallet imported successfully");
-        setTimeout(() => setSuccess(""), 5000);
+        setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result.error);
+        setTimeout(() => setError(""), 3000);
       }
     }
   };
@@ -257,27 +301,12 @@ const Wallet = () => {
     <div className="w-full">
       <div className="card bg-base-100 border-2 border-base-300 rounded-xl shadow">
         <div className="card-body">
-          <h2 className="card-title text-2xl font-bold mb-4 text-primary">
+          <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
+            <WalletIcon className="w-7 h-7 text-primary" />
             Wallet Management
           </h2>
 
-          {/* User Info */}
-          {user && (
-            <div className="alert alert-info mb-4">
-              <div>
-                <strong>User:</strong> {user.name} ({user.email})
-              </div>
-            </div>
-          )}
-
           {/* Success Message */}
-          {success && (
-            <div className="alert alert-success mb-4">
-              <span>{success}</span>
-            </div>
-          )}
-
-          {/* Success Display */}
           {success && (
             <div className="alert alert-success mb-4">
               <span>{success}</span>
@@ -367,7 +396,10 @@ const Wallet = () => {
             </h3>
             <button
               className="btn btn-sm btn-outline"
-              onClick={fetchWallets}
+              onClick={() => {
+                fetchProfile();
+                fetchWallets();
+              }}
               disabled={loading}
             >
               {loading ? "Loading..." : "Refresh"}
@@ -375,8 +407,43 @@ const Wallet = () => {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-8">
-              <span className="loading loading-spinner loading-lg"></span>
+            <div className="space-y-4">
+              {/* Skeleton wallet cards */}
+              {[...Array(3)].map((_, index) => (
+                <div
+                  key={index}
+                  className="card bg-base-200 border border-base-300 rounded-lg"
+                >
+                  <div className="card-body p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="skeleton h-6 w-32"></div>
+                      <div className="flex gap-2">
+                        <div className="skeleton h-5 w-16 rounded-full"></div>
+                        <div className="skeleton h-5 w-20 rounded-full"></div>
+                      </div>
+                    </div>
+
+                    <div className="skeleton h-3 w-16 mb-1"></div>
+                    <div className="skeleton h-4 w-full mb-3"></div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="skeleton h-3 w-12 mb-1"></div>
+                        <div className="skeleton h-4 w-24"></div>
+                      </div>
+                      <div>
+                        <div className="skeleton h-3 w-16 mb-1"></div>
+                        <div className="skeleton h-4 w-20"></div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <div className="skeleton h-6 w-20"></div>
+                      <div className="skeleton h-6 w-24"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <ul className="space-y-4">
@@ -398,6 +465,9 @@ const Wallet = () => {
                         >
                           {wallet.isActive ? "Active" : "Inactive"}
                         </div>
+                        {wallet.walletAddress === primaryWalletAddress && (
+                          <div className="badge badge-primary">Primary</div>
+                        )}
                         <div className="badge badge-outline">
                           {wallet.importMethod === "GENERATED"
                             ? "Generated"
@@ -446,9 +516,11 @@ const Wallet = () => {
                       <button
                         className="btn btn-xs btn-secondary"
                         onClick={() => setPrimaryWallet(wallet.walletAddress)}
-                        disabled={wallet.isActive}
+                        disabled={wallet.walletAddress === primaryWalletAddress}
                       >
-                        Set as Primary
+                        {wallet.walletAddress === primaryWalletAddress
+                          ? "Primary Wallet"
+                          : "Set as Primary"}
                       </button>
                     </div>
                   </div>

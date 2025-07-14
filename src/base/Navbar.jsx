@@ -98,58 +98,47 @@ const Navbar = () => {
         </label>
         {/* User avatar dropdown menu */}
         {/* User avatar dropdown with authentication */}
-        <div className="dropdown dropdown-end ml-4">
-          <div
-            tabIndex={0}
-            role="button"
-            className="btn btn-ghost btn-circle avatar"
-          >
-            <div className="w-10 rounded-full">
-              <img
-                alt="User avatar"
-                src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-              />
+        {isAuthenticated && (
+          <div className="dropdown dropdown-end ml-4">
+            <div
+              tabIndex={0}
+              role="button"
+              className="btn btn-ghost btn-circle avatar"
+            >
+              <div className="w-10 rounded-full">
+                <img
+                  alt="User avatar"
+                  src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                />
+              </div>
             </div>
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+            >
+              <li className="px-2 py-1">
+                <span className="text-sm font-medium text-base-content/70">
+                  {user?.name || user?.email || "User"}
+                </span>
+              </li>
+              <div className="divider my-1"></div>
+              {/* <li>
+                <a className="justify-between">
+                  Profile
+                  <span className="badge badge-sm">New</span>
+                </a>
+              </li>
+              <li>
+                <a>Settings</a>
+              </li> */}
+              <li>
+                <a onClick={handleLogout} className="text-error">
+                  Logout
+                </a>
+              </li>
+            </ul>
           </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
-          >
-            {isAuthenticated ? (
-              <>
-                <li className="px-2 py-1">
-                  <span className="text-sm font-medium text-base-content/70">
-                    {user?.name || user?.email || "User"}
-                  </span>
-                </li>
-                <div className="divider my-1"></div>
-                <li>
-                  <a className="justify-between">
-                    Profile
-                    <span className="badge badge-sm">New</span>
-                  </a>
-                </li>
-                <li>
-                  <a>Settings</a>
-                </li>
-                <li>
-                  <a onClick={handleLogout} className="text-error">
-                    Logout
-                  </a>
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <a onClick={() => navigate("/login")}>Login</a>
-                </li>
-                <li>
-                  <a onClick={() => navigate("/register")}>Sign up</a>
-                </li>
-              </>
-            )}
-          </ul>
-        </div>
+        )}
       </div>
     </div>
   );

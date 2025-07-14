@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
-import Datagrid from "../datagrid/Datagrid";
+import Datagrid from "../../../components/datagrid/Datagrid";
 import { EyeIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 
-const RecentTransactions = ({
-  recentTrades,
+const SettlementHistory = ({
+  settlements,
   loading,
   metadata,
   onScopeChange,
@@ -11,68 +11,86 @@ const RecentTransactions = ({
 }) => {
   const tableHeaderData = useMemo(
     () => [
-      { columnName: "Time", sort: true, filter: false },
-      { columnName: "Type", sort: true, filter: true },
-      { columnName: "Amount (ETK)", sort: true, filter: false },
-      { columnName: "Price (IDRS/ETK)", sort: true, filter: false },
-      { columnName: "Total (IDRS)", sort: true, filter: false },
-      { columnName: "Buyer", sort: false, filter: false },
-      { columnName: "Seller", sort: false, filter: false },
+      { columnName: "Settlement ID", sort: false, filter: false },
+      { columnName: "Smart Meter", sort: true, filter: true },
+      { columnName: "Period Start", sort: true, filter: false },
+      { columnName: "Period End", sort: true, filter: false },
+      { columnName: "Net kWh", sort: true, filter: false },
+      { columnName: "ETK Credited", sort: true, filter: false },
+      { columnName: "Status", sort: true, filter: true },
       { columnName: "TX Hash", sort: false, filter: false },
+      { columnName: "Created At", sort: true, filter: false },
     ],
     []
   );
 
   const tableData = useMemo(() => {
-    if (!recentTrades || recentTrades.length === 0) return [];
+    if (!settlements || settlements.length === 0) return [];
 
-    return recentTrades.map((trade, index) => [
-      trade.tradeId || index + 1, // ID for row selection
-      new Date(trade.tradeTimestamp).toLocaleString("id-ID", {
+    return settlements.map((settlement, index) => [
+      settlement.settlementId || index + 1, // ID for row selection
+      settlement.settlementId,
+      settlement.meterId,
+      new Date(settlement.periodStartTime).toLocaleString("id-ID", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
       }),
-      "TRADE", // Since this is a completed trade
-      parseFloat(trade.tradedEtkAmount).toLocaleString("id-ID", {
+      new Date(settlement.periodEndTime).toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      parseFloat(settlement.netKwhFromGrid).toLocaleString("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      }) + " kWh",
+      parseFloat(settlement.etkAmountCredited).toLocaleString("id-ID", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 6,
-      }),
-      parseFloat(trade.priceIdrsPerEtk).toLocaleString("id-ID", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }),
-      parseFloat(trade.totalIdrsValue).toLocaleString("id-ID", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }),
-      trade.buyerWalletAddress
-        ? `${trade.buyerWalletAddress.slice(
-            0,
-            6
-          )}...${trade.buyerWalletAddress.slice(-4)}`
-        : "Unknown",
-      trade.sellerWalletAddress
-        ? `${trade.sellerWalletAddress.slice(
-            0,
-            6
-          )}...${trade.sellerWalletAddress.slice(-4)}`
-        : "Unknown",
-      trade.blockchainTxHash
+      }) + " ETK",
+      {
+        text: settlement.status,
+        decorator: {
+          status: {
+            type: settlement.status === "SUCCESS" ? "success" : "error",
+            badge: true,
+          },
+        },
+      },
+      settlement.blockchainTxHash
         ? {
-            text: `${trade.blockchainTxHash.slice(
+            text: `${settlement.blockchainTxHash.slice(
               0,
               6
-            )}...${trade.blockchainTxHash.slice(-4)}`,
+            )}...${settlement.blockchainTxHash.slice(-4)}`,
             decorator: "link",
-            href: `http://34.101.197.110:8999/#section=explorer&widgetId=txn-detail&data="${trade.blockchainTxHash}"`,
+            href: `http://34.101.197.110:8999/#section=explorer&widgetId=txn-detail&data="${settlement.blockchainTxHash}"`,
             target: "_blank",
           }
         : "-",
+      new Date(settlement.createdAtBackend).toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     ]);
-  }, [recentTrades]);
+  }, [settlements]);
+
+  const tableOptions = {
+    numberOfRows: Math.max(1, tableData.length), // Dynamic height based on data
+    pagination: false, // Disable pagination to show all rows
+    itemsPerPage: false, // Hide items per page selector
+    actionButtons: false, // Hide action buttons
+    exportButton: true, // Keep export functionality
+    search: true, // Hide search since we're showing all data
+  };
 
   const getScopeIcon = (scope) => {
     switch (scope) {
@@ -88,22 +106,22 @@ const RecentTransactions = ({
   const getScopeLabel = (scope) => {
     switch (scope) {
       case "own":
-        return "My Trades";
+        return "My Settlements";
       case "public":
-        return "Public Trades";
+        return "Public Settlements";
       default:
-        return "My Trades";
+        return "My Settlements";
     }
   };
 
   const getScopeDescription = (scope) => {
     switch (scope) {
       case "own":
-        return "View your own trade transactions";
+        return "View your own settlement history";
       case "public":
-        return "View public trade transactions for transparency";
+        return "View public settlement transactions for transparency";
       default:
-        return "View your own trade transactions";
+        return "View your own settlement history";
     }
   };
 
@@ -114,15 +132,6 @@ const RecentTransactions = ({
       </div>
     );
   }
-
-  const tableOptions = {
-    numberOfRows: Math.max(1, tableData.length), // Dynamic height based on data
-    pagination: false, // Disable pagination to show all rows
-    itemsPerPage: false, // Hide items per page selector
-    actionButtons: false, // Hide action buttons
-    exportButton: true, // Keep export functionality
-    search: true, // Show search since we're showing all data
-  };
 
   return (
     <div className="space-y-4">
@@ -153,7 +162,7 @@ const RecentTransactions = ({
             <span className="font-semibold">{getScopeLabel(currentScope)}</span>
             <span className="divider divider-horizontal hidden sm:block"></span>
             <span className="hidden sm:inline">Showing:</span>
-            <span className="font-semibold">{metadata.count}</span>
+            <span className="font-semibold">{metadata.totalReturned}</span>
             <span className="hidden sm:inline">of {metadata.limit} max</span>
           </div>
         )}
@@ -166,20 +175,20 @@ const RecentTransactions = ({
           <div>
             <div className="font-bold">Public Transparency View</div>
             <div className="text-sm">
-              You are viewing public trade transactions to promote transparency
-              in the P2P energy trading network.
+              You are viewing public settlement transactions to promote
+              transparency in the P2P energy trading network.
             </div>
           </div>
         </div>
       )}
 
       {/* Data Table */}
-      {!recentTrades || recentTrades.length === 0 ? (
+      {!settlements || settlements.length === 0 ? (
         <div className="text-center py-8 text-base-content/60">
           <div className="flex flex-col items-center gap-2">
             {getScopeIcon(currentScope)}
             <div>
-              No trade transactions available for{" "}
+              No settlement history available for{" "}
               {getScopeLabel(currentScope).toLowerCase()}
             </div>
           </div>
@@ -197,4 +206,4 @@ const RecentTransactions = ({
   );
 };
 
-export default RecentTransactions;
+export default SettlementHistory;

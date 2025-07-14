@@ -34,7 +34,14 @@ export function getConsumeChartData(energyHistory, colorError) {
   };
 }
 
-export function getGridChartData(energyHistory, gridStatus, colorSuccess, colorError, colorWarning, colorBaseContent) {
+export function getGridChartData(
+  energyHistory,
+  gridStatus,
+  colorSuccess,
+  colorError,
+  colorWarning,
+  colorBaseContent
+) {
   return {
     labels: energyHistory.map((d) => d.time).reverse(),
     datasets: [
@@ -73,7 +80,13 @@ export function getGridChartData(energyHistory, gridStatus, colorSuccess, colorE
   };
 }
 
-export function getHistoryBarData(energyHistory, colorWarning, colorError, colorAccent, colorSuccess) {
+export function getHistoryBarData(
+  energyHistory,
+  colorWarning,
+  colorError,
+  colorAccent,
+  colorSuccess
+) {
   return {
     labels: energyHistory.map((d) => d.time).reverse(),
     datasets: [
@@ -112,6 +125,51 @@ export function getHistoryBarData(energyHistory, colorWarning, colorError, color
         borderRadius: 4,
         barPercentage: 0.8,
         categoryPercentage: 0.7,
+      },
+    ],
+  };
+}
+
+export function getBatteryChartData(
+  energyHistory,
+  batteryStatus,
+  colorSuccess,
+  colorError,
+  colorBaseContent
+) {
+  return {
+    labels: energyHistory.map((d) => d.time).reverse(),
+    datasets: [
+      {
+        label: "Battery",
+        data: energyHistory.map((d) => d.battery || 0).reverse(),
+        borderColor:
+          batteryStatus === "Charging"
+            ? colorSuccess
+            : batteryStatus === "Discharging"
+            ? colorError
+            : colorBaseContent,
+        backgroundColor:
+          batteryStatus === "Charging"
+            ? colorSuccess + "33"
+            : batteryStatus === "Discharging"
+            ? colorError + "33"
+            : colorBaseContent + "33",
+        tension: 0.4,
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 3,
+        order: 1,
+      },
+      {
+        label: "Zero",
+        data: new Array(energyHistory.length).fill(0),
+        borderColor: "#888",
+        borderWidth: 1,
+        borderDash: [6, 6],
+        pointRadius: 0,
+        fill: false,
+        order: 0,
       },
     ],
   };

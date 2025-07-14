@@ -109,7 +109,7 @@ const DashboardUser = () => {
   return (
     <div className="w-full mx-auto grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4">
       {/* Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 col-span-2 md:col-span-2 xl:col-span-4">
+      <div className=" flex flex-col md:flex-row md:items-center md:justify-between gap-4 col-span-2 md:col-span-2 xl:col-span-4">
         <h1 className="text-3xl font-bold">My Energy Trading Dashboard</h1>
         {error && (
           <div className="alert alert-error">
@@ -120,9 +120,90 @@ const DashboardUser = () => {
 
       {/* Loading State */}
       {loading ? (
-        <div className="col-span-2 md:col-span-2 xl:col-span-4 flex justify-center items-center py-20">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
+        <>
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 col-span-2 md:col-span-2 xl:col-span-4">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={index}
+                className="card bg-base-100 border-2 border-base-300"
+              >
+                <div className="card-body p-4 items-center">
+                  <div className="skeleton h-8 w-20 mb-2"></div>
+                  <div className="skeleton h-4 w-16"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Device Health Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300 col-span-2 md:col-span-2 xl:col-span-4">
+            <div className="card-body">
+              <div className="skeleton h-6 w-40 mb-4"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="stat">
+                    <div className="skeleton h-4 w-24 mb-2"></div>
+                    <div className="skeleton h-8 w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Real-time Energy Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300 col-span-2 md:col-span-2 xl:col-span-4">
+            <div className="card-body">
+              <div className="skeleton h-6 w-48 mb-4"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="stat">
+                    <div className="skeleton h-4 w-32 mb-2"></div>
+                    <div className="skeleton h-8 w-20"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300 col-span-2 md:col-span-2 xl:col-span-4">
+            <div className="card-body">
+              <div className="skeleton h-6 w-64 mb-4"></div>
+              <div className="skeleton h-64 w-full"></div>
+            </div>
+          </div>
+
+          {/* Trading Performance Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300 col-span-2 md:col-span-2 xl:col-span-4">
+            <div className="card-body">
+              <div className="skeleton h-6 w-48 mb-4"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="stat">
+                    <div className="skeleton h-4 w-24 mb-2"></div>
+                    <div className="skeleton h-8 w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Energy Summary Skeleton */}
+          <div className="card bg-base-100 border-2 border-base-300 col-span-2 md:col-span-2 xl:col-span-4">
+            <div className="card-body">
+              <div className="skeleton h-6 w-40 mb-4"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="stat">
+                    <div className="skeleton h-4 w-28 mb-2"></div>
+                    <div className="skeleton h-8 w-20"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
       ) : (
         <>
           {/* User Stats from API */}
@@ -130,20 +211,28 @@ const DashboardUser = () => {
             <div className="card bg-base-100 border-2 border-base-300">
               <div className="card-body p-4 items-center">
                 <div className="text-2xl font-bold text-primary">
-                  {dashboardStats?.balances?.ETK?.toLocaleString("id-ID") ||
-                    "0"}
+                  {dashboardStats?.balances?.ETK
+                    ? new Intl.NumberFormat("id-ID", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(dashboardStats.balances.ETK)
+                    : "0,00"}
                 </div>
-                <div className="text-sm text-base-content/60">Saldo ETK</div>
+                <div className="text-sm text-base-content/60">ETK Balance</div>
               </div>
             </div>
             <div className="card bg-base-100 border-2 border-base-300">
               <div className="card-body p-4 items-center">
                 <div className="text-2xl font-bold text-primary">
-                  Rp{" "}
-                  {dashboardStats?.balances?.IDRS?.toLocaleString("id-ID") ||
-                    "0"}
+                  Rp
+                  {dashboardStats?.balances?.IDRS
+                    ? new Intl.NumberFormat("id-ID", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(dashboardStats.balances.IDRS)
+                    : "0,00"}
                 </div>
-                <div className="text-sm text-base-content/60">Saldo IDRS</div>
+                <div className="text-sm text-base-content/60">IDRS Balance</div>
               </div>
             </div>
             <div className="card bg-base-100 border-2 border-base-300">
@@ -152,7 +241,7 @@ const DashboardUser = () => {
                   {dashboardStats?.tradingStats?.totalTrades || "0"}
                 </div>
                 <div className="text-sm text-base-content/60">
-                  Total Transaksi
+                  Total Transactions
                 </div>
               </div>
             </div>
@@ -161,7 +250,7 @@ const DashboardUser = () => {
                 <div className="text-2xl font-bold text-primary">
                   {user?.name || "Prosumer"}
                 </div>
-                <div className="text-sm text-base-content/60">Role</div>
+                <div className="text-sm text-base-content/60">Username</div>
               </div>
             </div>
           </div>
@@ -210,7 +299,8 @@ const DashboardUser = () => {
                   <div className="stat">
                     <div className="stat-title">Current Generation</div>
                     <div className="stat-value text-primary">
-                      {realTimeEnergy.timeSeries[0]?.solar?.toFixed(2) || "0"} kW
+                      {realTimeEnergy.timeSeries[0]?.solar?.toFixed(2) || "0"}{" "}
+                      kW
                     </div>
                   </div>
                   <div className="stat">
@@ -222,13 +312,17 @@ const DashboardUser = () => {
                   <div className="stat">
                     <div className="stat-title">Grid Export</div>
                     <div className="stat-value text-success">
-                      {realTimeEnergy.timeSeries[0]?.gridExport?.toFixed(2) || "0"} kW
+                      {realTimeEnergy.timeSeries[0]?.gridExport?.toFixed(2) ||
+                        "0"}{" "}
+                      kW
                     </div>
                   </div>
                   <div className="stat">
                     <div className="stat-title">Grid Import</div>
                     <div className="stat-value text-error">
-                      {realTimeEnergy.timeSeries[0]?.gridImport?.toFixed(2) || "0"} kW
+                      {realTimeEnergy.timeSeries[0]?.gridImport?.toFixed(2) ||
+                        "0"}{" "}
+                      kW
                     </div>
                   </div>
                 </div>
@@ -245,7 +339,7 @@ const DashboardUser = () => {
                 </h2>
                 <MultipleBarChart
                   data={energyChart.map((item) => ({
-                    label: new Date(item.date).toLocaleDateString("id-ID", {
+                    label: new Date(item.date).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     }),

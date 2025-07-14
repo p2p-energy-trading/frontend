@@ -11,8 +11,13 @@ export default function useTradingApi() {
   const [orderbook, setOrderbook] = useState(null);
   const [orderbookDetailed, setOrderbookDetailed] = useState(null);
   const [marketStats, setMarketStats] = useState(null);
+  const [priceHistory, setPriceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Metadata for scope information
+  const [tradesMetadata, setTradesMetadata] = useState(null);
+  const [ordersMetadata, setOrdersMetadata] = useState(null);
 
   // Order placement state
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -23,35 +28,62 @@ export default function useTradingApi() {
   const [cancelError, setCancelError] = useState(null);
 
   // Fetch orders
-  const fetchOrders = useCallback(async () => {
-    try {
-      const response = await apiCall("/trading/orders");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setOrders(data.data);
+  const fetchOrders = useCallback(
+    async (scope = "own", status = null, limit = 50) => {
+      try {
+        // Build query parameters
+        const params = new URLSearchParams();
+        params.append("scope", scope);
+        params.append("limit", limit.toString());
+        if (status) {
+          params.append("status", status);
         }
+
+        const response = await apiCall(`/trading/orders?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setOrders(data.data);
+            setOrdersMetadata(data.metadata || null);
+            return data.metadata || null;
+          }
+        } else {
+          console.error(
+            "Failed to fetch orders, response not ok:",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        setError("Failed to fetch orders");
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Failed to fetch orders");
-    }
-  }, []);
+      return null;
+    },
+    []
+  );
 
   // Fetch recent trades
-  const fetchRecentTrades = useCallback(async () => {
+  const fetchRecentTrades = useCallback(async (scope = "own", limit = 50) => {
     try {
-      const response = await apiCall("/trading/trades");
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("limit", limit.toString());
+      params.append("scope", scope);
+
+      const response = await apiCall(`/trading/trades?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setRecentTrades(data.data);
+          setTradesMetadata(data.metadata || null);
+          return data.metadata || null;
         }
       }
     } catch (error) {
       console.error("Error fetching recent trades:", error);
       setError("Failed to fetch recent trades");
     }
+    return null;
   }, []);
 
   // Fetch orderbook
@@ -101,6 +133,34 @@ export default function useTradingApi() {
       setError("Failed to fetch market stats");
     }
   }, []);
+
+  // Fetch price history
+  const fetchPriceHistory = useCallback(
+    async (interval = "1s", limit = 1000) => {
+      try {
+        const response = await apiCall(
+          `/trading/price-history?interval=${interval}&limit=${limit}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setPriceHistory(data.data);
+          } else {
+            console.warn(
+              "Price history API returned success=false:",
+              data.message
+            );
+          }
+        } else {
+          console.warn("Price history API response not ok:", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching price history:", error);
+        setError("Failed to fetch price history");
+      }
+    },
+    []
+  );
 
   // Place order
   const placeOrder = useCallback(
@@ -219,6 +279,7 @@ export default function useTradingApi() {
         fetchOrderbook(),
         fetchOrderbookDetailed(),
         fetchMarketStats(),
+        fetchPriceHistory(),
       ]).finally(() => {
         setLoading(false);
       });
@@ -230,6 +291,7 @@ export default function useTradingApi() {
     fetchOrderbook,
     fetchOrderbookDetailed,
     fetchMarketStats,
+    fetchPriceHistory,
   ]);
 
   // Set up auto-refresh for trading data
@@ -240,7 +302,7 @@ export default function useTradingApi() {
         fetchOrderbook();
         fetchOrderbookDetailed();
         fetchMarketStats();
-      }, 5000); // Refresh every 5 seconds
+      }, 3000); // Refresh every 3 seconds
 
       return () => clearInterval(interval);
     }
@@ -261,6 +323,7 @@ export default function useTradingApi() {
         fetchOrderbook(),
         fetchOrderbookDetailed(),
         fetchMarketStats(),
+        fetchPriceHistory(),
       ]);
     }
   }, [
@@ -270,6 +333,7 @@ export default function useTradingApi() {
     fetchOrderbook,
     fetchOrderbookDetailed,
     fetchMarketStats,
+    fetchPriceHistory,
   ]);
 
   return {
@@ -279,11 +343,19 @@ export default function useTradingApi() {
     orderbook,
     orderbookDetailed,
     marketStats,
+    priceHistory,
+
+    // Metadata
+    tradesMetadata,
+    ordersMetadata,
 
     // Actions
     placeOrder,
     cancelOrder,
     refreshAllData,
+    fetchPriceHistory,
+    fetchRecentTrades,
+    fetchOrders,
 
     // States
     loading,

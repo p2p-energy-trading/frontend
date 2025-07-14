@@ -182,7 +182,7 @@ export default function useSmartMeterApi() {
         solar: item.solar || 0,
         usage: item.load || 0,
         grid: item.netFlow || 0,
-        battery: Math.abs(item.battery || 0),
+        battery: item.battery || 0, // Keep negative values for discharging
       })) || [];
 
   return {
