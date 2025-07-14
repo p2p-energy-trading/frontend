@@ -67,7 +67,11 @@ const RecentTransactions = ({
               6
             )}...${trade.blockchainTxHash.slice(-4)}`,
             decorator: "link",
-            href: `http://34.101.197.110:8999/#section=explorer&widgetId=txn-detail&data="${trade.blockchainTxHash}"`,
+            href: `${
+              import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
+            }/#section=explorer&widgetId=txn-detail&data="${
+              trade.blockchainTxHash
+            }"`,
             target: "_blank",
           }
         : "-",
