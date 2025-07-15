@@ -198,13 +198,32 @@ const DashboardUser = () => {
             <div className="card bg-base-100 border-2 border-base-300 col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4">
               <div className="card-body p-3 sm:p-4">
                 <div className="skeleton h-5 sm:h-6 w-32 sm:w-40 mb-4"></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
                   {[...Array(4)].map((_, index) => (
                     <div key={index} className="stat">
                       <div className="skeleton h-3 sm:h-4 w-24 sm:w-28 mb-2"></div>
                       <div className="skeleton h-6 sm:h-8 w-16 sm:w-20"></div>
                     </div>
                   ))}
+                </div>
+                {/* Energy Export/Import Balance Skeleton */}
+                <div className="card bg-base-200 border border-base-300 p-3 sm:p-4">
+                  <div className="skeleton h-4 sm:h-5 w-40 sm:w-48 mb-3 mx-auto"></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="bg-base-100 rounded-lg border border-base-300 p-3">
+                      <div className="skeleton h-3 sm:h-4 w-24 sm:w-32 mb-2 mx-auto"></div>
+                      <div className="skeleton h-6 sm:h-8 w-16 sm:w-20 mb-1 mx-auto"></div>
+                      <div className="skeleton h-3 w-20 sm:w-24 mx-auto"></div>
+                    </div>
+                    <div className="bg-base-100 rounded-lg border border-base-300 p-3">
+                      <div className="skeleton h-3 sm:h-4 w-24 sm:w-32 mb-2 mx-auto"></div>
+                      <div className="skeleton h-6 sm:h-8 w-16 sm:w-20 mb-1 mx-auto"></div>
+                      <div className="skeleton h-3 w-20 sm:w-24 mx-auto"></div>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-2 bg-base-100 border border-base-300 rounded">
+                    <div className="skeleton h-3 sm:h-4 w-32 sm:w-40 mx-auto"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -463,65 +482,7 @@ const DashboardUser = () => {
                     Energy Summary{/* ({energySummary.period}) */}
                   </h2>
 
-                  {/* P2P Energy Trading Highlight */}
-                  <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-lg p-3 sm:p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-                      <h3 className="text-base sm:text-lg font-semibold text-primary">
-                        P2P Energy Trading Summary
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-center">
-                        <div className="text-xs sm:text-sm text-success/80 font-medium mb-1">
-                          Total Energy Exported
-                        </div>
-                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-success">
-                          {energySummary.settlements.etkMinted.toFixed(2)}
-                          <span className="text-sm sm:text-base ml-1">kWh</span>
-                        </div>
-                        <div className="text-xs text-success/70 mt-1">
-                          = {energySummary.settlements.etkMinted.toFixed(2)} ETK
-                          Minted
-                        </div>
-                      </div>
-                      <div className="bg-error/10 border border-error/20 rounded-lg p-3 text-center">
-                        <div className="text-xs sm:text-sm text-error/80 font-medium mb-1">
-                          Total Energy Imported
-                        </div>
-                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-error">
-                          {energySummary.settlements.etkBurned.toFixed(2)}
-                          <span className="text-sm sm:text-base ml-1">kWh</span>
-                        </div>
-                        <div className="text-xs text-error/70 mt-1">
-                          = {energySummary.settlements.etkBurned.toFixed(2)} ETK
-                          Burned
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 p-2 bg-info/10 border border-info/20 rounded text-center">
-                      <div className="text-xs sm:text-sm text-info/80">
-                        Net Energy Balance:
-                        <span
-                          className={`font-bold ml-1 ${
-                            energySummary.settlements.etkMinted -
-                              energySummary.settlements.etkBurned >=
-                            0
-                              ? "text-success"
-                              : "text-error"
-                          }`}
-                        >
-                          {(
-                            energySummary.settlements.etkMinted -
-                            energySummary.settlements.etkBurned
-                          ).toFixed(2)}{" "}
-                          kWh
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
                     <div className="stat">
                       <div className="stat-title text-xs sm:text-sm truncate">
                         Today Generation
@@ -554,6 +515,61 @@ const DashboardUser = () => {
                       </div>
                       <div className="stat-value text-base sm:text-lg lg:text-xl text-error">
                         {energySummary.settlements.etkBurned.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Energy Export/Import Balance */}
+                  <div className="card bg-base-200 border border-base-300 p-3 sm:p-4">
+                    <h3 className="text-base sm:text-lg font-semibold mb-3 text-center">
+                      Energy Export/Import Balance
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="text-center p-3 bg-base-100 rounded-lg border border-base-300">
+                        <div className="text-xs sm:text-sm text-success/80 font-medium mb-1">
+                          Total Energy Exported
+                        </div>
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-success">
+                          {energySummary.settlements.etkMinted.toFixed(2)}
+                          <span className="text-sm sm:text-base ml-1">kWh</span>
+                        </div>
+                        <div className="text-xs text-success/70 mt-1">
+                          = {energySummary.settlements.etkMinted.toFixed(2)} ETK
+                          Minted
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-base-100 rounded-lg border border-base-300">
+                        <div className="text-xs sm:text-sm text-error/80 font-medium mb-1">
+                          Total Energy Imported
+                        </div>
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-error">
+                          {energySummary.settlements.etkBurned.toFixed(2)}
+                          <span className="text-sm sm:text-base ml-1">kWh</span>
+                        </div>
+                        <div className="text-xs text-error/70 mt-1">
+                          = {energySummary.settlements.etkBurned.toFixed(2)} ETK
+                          Burned
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-2 bg-base-100 border border-base-300 rounded text-center">
+                      <div className="text-xs sm:text-sm text-base-content/80">
+                        Net Energy Balance:
+                        <span
+                          className={`font-bold ml-1 ${
+                            energySummary.settlements.etkMinted -
+                              energySummary.settlements.etkBurned >=
+                            0
+                              ? "text-success"
+                              : "text-error"
+                          }`}
+                        >
+                          {(
+                            energySummary.settlements.etkMinted -
+                            energySummary.settlements.etkBurned
+                          ).toFixed(2)}{" "}
+                          kWh
+                        </span>
                       </div>
                     </div>
                   </div>
