@@ -184,12 +184,12 @@ const Homepage = () => {
                       with price matching
                     </li>
                     <li>
-                      • <strong>Smart contract escrow:</strong> Secure token
-                      approval and transfer
+                      • <strong>Whitelist-based escrow:</strong> Seamless
+                      trading without manual token approvals
                     </li>
                     <li>
-                      • <strong>Instant settlement:</strong> Automatic execution
-                      and balance updates
+                      • <strong>Direct execution:</strong> Smart contracts
+                      handle secure transfers automatically
                     </li>
                     <li>
                       • <strong>IDRS payments:</strong> Indonesian Rupiah
