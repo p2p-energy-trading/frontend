@@ -192,7 +192,7 @@ const SmartMeter = () => {
           Smart Meter Dashboard
         </h2>
         <button
-          className="btn btn-sm btn-outline"
+          className="btn btn-sm btn-outline hidden"
           onClick={refreshData}
           disabled={loading}
         >
@@ -319,7 +319,7 @@ const SmartMeter = () => {
                   <circle
                     cx="12"
                     cy="12"
-                    r="5"
+                    r="4"
                     strokeWidth={2}
                     stroke="currentColor"
                   />
@@ -327,7 +327,7 @@ const SmartMeter = () => {
                     strokeLinecap="round"
                     strokeWidth={2}
                     stroke="currentColor"
-                    d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07l-1.41-1.41M6.34 6.34l-1.41-1.41m12.02 0l-1.41 1.41M6.34 17.66l-1.41 1.41"
+                    d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.364-5.364l-1.414 1.414M7.05 7.05L5.636 5.636m12.728 0l-1.414 1.414M7.05 16.95l-1.414 1.414"
                   />
                 </svg>
               }

@@ -14,6 +14,64 @@ const DeviceInfoApi = ({
 }) => {
   const meters = userProfile?.meters || [];
 
+  // Function to format relative time
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return "N/A";
+
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMs = now - date;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    const diffInMonths = Math.floor(diffInDays / 30);
+
+    // If less than 1 minute
+    if (diffInMinutes < 1) {
+      return "Just now";
+    }
+
+    // If less than 1 hour
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
+    }
+
+    // If less than 24 hours
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+    }
+
+    // If today
+    if (diffInDays === 0) {
+      return "Today";
+    }
+
+    // If yesterday
+    if (diffInDays === 1) {
+      return "Yesterday";
+    }
+
+    // If less than a week
+    if (diffInDays < 7) {
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+    }
+
+    // If less than a month
+    if (diffInWeeks < 4) {
+      return `${diffInWeeks} week${diffInWeeks > 1 ? "s" : ""} ago`;
+    }
+
+    // If less than a year
+    if (diffInMonths < 12) {
+      return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
+    }
+
+    // If more than a year
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
+  };
+
   return (
     <div className="card bg-base-100 border-2 border-base-300 p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
@@ -70,10 +128,7 @@ const DeviceInfoApi = ({
           </div>
           <div className="font-mono text-xs">{lastUpdate}</div>
           <div className="text-base-content/50 mt-1">
-            Last Seen:{" "}
-            {selectedMeter?.lastSeen
-              ? new Date(selectedMeter.lastSeen).toLocaleTimeString()
-              : "N/A"}
+            Last Seen: {formatRelativeTime(selectedMeter?.lastSeen)}
           </div>
         </div>
 

@@ -173,11 +173,12 @@ const Trade = () => {
 
   return (
     <div className="space-y-6 w-full">
-      {/* Header with refresh button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Energy Trading Market</h1>
+        {/* Refresh button hidden but kept for functionality */}
         <button
-          className="btn btn-sm btn-outline"
+          className="btn btn-sm btn-outline hidden"
           onClick={refreshAllData}
           disabled={loading}
         >
