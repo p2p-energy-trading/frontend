@@ -18,11 +18,9 @@ export const energyHistoryHeader = [
   { columnName: "Solar (kWh)", sort: false, filter: false },
   { columnName: "Usage (kWh)", sort: false, filter: false },
   { columnName: "Grid (kWh)", sort: false, filter: false },
-  { columnName: "Battery (kWh)", sort: false, filter: false },
 ];
 
-export const tableOptions =
-{
+export const tableOptions = {
   itemPerPage: false,
   numberOfRows: 12,
   rowHeight: 12,
@@ -31,7 +29,7 @@ export const tableOptions =
   actionButtons: false,
   exportButton: false,
   search: false,
-}
+};
 
 export const DEVICE_LIST = [
   { device_id: "SM-001", location: "Rooftop, Home" },

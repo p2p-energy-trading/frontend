@@ -84,8 +84,7 @@ export function getHistoryBarData(
   energyHistory,
   colorWarning,
   colorError,
-  colorAccent,
-  colorSuccess
+  colorAccent
 ) {
   return {
     labels: energyHistory.map((d) => d.time).reverse(),
@@ -112,15 +111,6 @@ export function getHistoryBarData(
         label: "Grid",
         data: energyHistory.map((d) => d.grid).reverse(),
         backgroundColor: colorAccent,
-        stack: "Stack 0",
-        borderRadius: 4,
-        barPercentage: 0.8,
-        categoryPercentage: 0.7,
-      },
-      {
-        label: "Battery",
-        data: energyHistory.map((d) => d.battery).reverse(),
-        backgroundColor: colorSuccess,
         stack: "Stack 0",
         borderRadius: 4,
         barPercentage: 0.8,

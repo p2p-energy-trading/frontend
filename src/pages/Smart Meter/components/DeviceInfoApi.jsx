@@ -44,12 +44,24 @@ const DeviceInfoApi = ({
 
     // If today
     if (diffInDays === 0) {
-      return "Today";
+      const timeString = date.toLocaleTimeString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return `Today at ${timeString}`;
     }
 
     // If yesterday
     if (diffInDays === 1) {
-      return "Yesterday";
+      const timeString = date.toLocaleTimeString("id-ID", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return `Yesterday at ${timeString}`;
     }
 
     // If less than a week
@@ -150,7 +162,16 @@ const DeviceInfoApi = ({
           <div className="text-base-content/50 mt-1">
             Created:{" "}
             {selectedMeter?.createdAt
-              ? new Date(selectedMeter.createdAt).toLocaleDateString()
+              ? new Date(selectedMeter.createdAt).toLocaleString("id-ID", {
+                  timeZone: "Asia/Jakarta",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour12: false,
+                })
               : "N/A"}
           </div>
         </div>

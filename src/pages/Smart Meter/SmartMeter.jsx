@@ -171,16 +171,9 @@ const SmartMeter = () => {
         processedEnergyHistory,
         colorWarning,
         colorError,
-        colorAccent,
-        colorSuccess
+        colorAccent
       ),
-    [
-      processedEnergyHistory,
-      colorWarning,
-      colorError,
-      colorAccent,
-      colorSuccess,
-    ]
+    [processedEnergyHistory, colorWarning, colorError, colorAccent]
   );
 
   return (
