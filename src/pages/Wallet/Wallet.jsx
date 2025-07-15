@@ -298,24 +298,24 @@ const Wallet = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full p-2 sm:p-4">
       <div className="card bg-base-100 border-2 border-base-300 rounded-xl shadow">
-        <div className="card-body">
-          <h2 className="text-2xl font-bold flex items-center gap-2 mb-4">
-            <WalletIcon className="w-7 h-7 text-primary" />
+        <div className="card-body p-4 sm:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 mb-4">
+            <WalletIcon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
             Wallet Management
           </h2>
 
           {/* Success Message */}
           {success && (
-            <div className="alert alert-success mb-4">
+            <div className="alert alert-success mb-4 text-sm">
               <span>{success}</span>
             </div>
           )}
 
           {/* Error Display */}
           {error && (
-            <div className="alert alert-error mb-4">
+            <div className="alert alert-error mb-4 text-sm">
               <span>{error}</span>
             </div>
           )}
@@ -330,7 +330,7 @@ const Wallet = () => {
                 Action
               </label>
               <select
-                className="select select-bordered w-full"
+                className="select select-bordered w-full text-sm"
                 id="action"
                 name="action"
                 required
@@ -351,7 +351,7 @@ const Wallet = () => {
               </label>
               <input
                 type="text"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full text-sm"
                 id="wallet_name"
                 name="wallet_name"
                 placeholder="Enter wallet name"
@@ -371,7 +371,7 @@ const Wallet = () => {
                 </label>
                 <input
                   type="password"
-                  className="input input-bordered w-full"
+                  className="input input-bordered w-full text-sm"
                   id="private_key"
                   name="private_key"
                   placeholder="Enter your private key"
@@ -382,7 +382,7 @@ const Wallet = () => {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary w-full">
+            <button type="submit" className="btn btn-primary w-full text-sm">
               {action === "create" ? "Create Wallet" : "Import Wallet"}
             </button>
           </form>
@@ -390,12 +390,12 @@ const Wallet = () => {
           <div className="divider my-8"></div>
 
           {/* Wallet List */}
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-base-content">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-base-content">
               Your Wallets
             </h3>
             <button
-              className="btn btn-sm btn-outline"
+              className="btn btn-sm btn-outline w-full sm:w-auto"
               onClick={() => {
                 fetchProfile();
                 fetchWallets();
@@ -414,32 +414,32 @@ const Wallet = () => {
                   key={index}
                   className="card bg-base-200 border border-base-300 rounded-lg"
                 >
-                  <div className="card-body p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="skeleton h-6 w-32"></div>
-                      <div className="flex gap-2">
-                        <div className="skeleton h-5 w-16 rounded-full"></div>
-                        <div className="skeleton h-5 w-20 rounded-full"></div>
+                  <div className="card-body p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                      <div className="skeleton h-5 sm:h-6 w-24 sm:w-32"></div>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="skeleton h-4 sm:h-5 w-12 sm:w-16 rounded-full"></div>
+                        <div className="skeleton h-4 sm:h-5 w-16 sm:w-20 rounded-full"></div>
                       </div>
                     </div>
 
-                    <div className="skeleton h-3 w-16 mb-1"></div>
-                    <div className="skeleton h-4 w-full mb-3"></div>
+                    <div className="skeleton h-3 w-12 sm:w-16 mb-1"></div>
+                    <div className="skeleton h-3 sm:h-4 w-full mb-3"></div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                       <div>
-                        <div className="skeleton h-3 w-12 mb-1"></div>
-                        <div className="skeleton h-4 w-24"></div>
+                        <div className="skeleton h-3 w-10 sm:w-12 mb-1"></div>
+                        <div className="skeleton h-3 sm:h-4 w-20 sm:w-24"></div>
                       </div>
                       <div>
-                        <div className="skeleton h-3 w-16 mb-1"></div>
-                        <div className="skeleton h-4 w-20"></div>
+                        <div className="skeleton h-3 w-12 sm:w-16 mb-1"></div>
+                        <div className="skeleton h-3 sm:h-4 w-16 sm:w-20"></div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-4">
-                      <div className="skeleton h-6 w-20"></div>
-                      <div className="skeleton h-6 w-24"></div>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                      <div className="skeleton h-5 sm:h-6 w-16 sm:w-20"></div>
+                      <div className="skeleton h-5 sm:h-6 w-20 sm:w-24"></div>
                     </div>
                   </div>
                 </div>
@@ -452,23 +452,25 @@ const Wallet = () => {
                   key={wallet.walletAddress}
                   className="card bg-base-200 border border-base-300 rounded-lg"
                 >
-                  <div className="card-body p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="text-lg font-semibold text-primary">
+                  <div className="card-body p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                      <div className="text-base sm:text-lg font-semibold text-primary truncate">
                         {wallet.walletName}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <div
-                          className={`badge ${
+                          className={`badge badge-sm ${
                             wallet.isActive ? "badge-success" : "badge-error"
                           }`}
                         >
                           {wallet.isActive ? "Active" : "Inactive"}
                         </div>
                         {wallet.walletAddress === primaryWalletAddress && (
-                          <div className="badge badge-primary">Primary</div>
+                          <div className="badge badge-sm badge-primary">
+                            Primary
+                          </div>
                         )}
-                        <div className="badge badge-outline">
+                        <div className="badge badge-sm badge-outline">
                           {wallet.importMethod === "GENERATED"
                             ? "Generated"
                             : "Imported"}
@@ -479,16 +481,16 @@ const Wallet = () => {
                     <div className="text-xs text-base-content/60 mb-1">
                       Address:
                     </div>
-                    <div className="font-mono text-sm break-all text-primary mb-3">
+                    <div className="font-mono text-xs sm:text-sm break-all text-primary mb-3 bg-base-300 p-2 rounded">
                       {wallet.walletAddress}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs">
                       <div>
                         <div className="text-base-content/60 mb-1">
                           Created:
                         </div>
-                        <div className="text-base-content/80">
+                        <div className="text-base-content/80 text-xs">
                           {formatDate(wallet.createdAt)}
                         </div>
                       </div>
@@ -496,15 +498,15 @@ const Wallet = () => {
                         <div className="text-base-content/60 mb-1">
                           Last Used:
                         </div>
-                        <div className="text-base-content/80">
+                        <div className="text-base-content/80 text-xs">
                           {formatDate(wallet.lastUsedAt)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-4">
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
                       <button
-                        className="btn btn-xs btn-primary"
+                        className="btn btn-xs btn-primary flex-1 sm:flex-none"
                         onClick={() =>
                           wallet.isActive
                             ? deactivateWallet(wallet.walletAddress)
@@ -514,7 +516,7 @@ const Wallet = () => {
                         {wallet.isActive ? "Deactivate" : "Activate"}
                       </button>
                       <button
-                        className="btn btn-xs btn-secondary"
+                        className="btn btn-xs btn-secondary flex-1 sm:flex-none"
                         onClick={() => setPrimaryWallet(wallet.walletAddress)}
                         disabled={wallet.walletAddress === primaryWalletAddress}
                       >

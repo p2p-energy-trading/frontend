@@ -1,0 +1,15 @@
+/* Remove default border separator from DaisyUI stat components */
+.stat {
+  border-right: none !important;
+}
+
+/* Remove any potential border styling from stat components */
+.stat::after {
+  display: none !important;
+}
+
+/* Ensure stats grid doesn't have unwanted borders */
+.stats .stat {
+  border-right: none !important;
+  border-left: none !important;
+}
