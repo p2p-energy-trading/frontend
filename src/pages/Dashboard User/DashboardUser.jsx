@@ -97,9 +97,9 @@ const DashboardUser = () => {
     if (user) {
       fetchDashboardData();
 
-      // console.log("Fetching dashboard data for user:", user.name);
-      // console.log("Stats:", dashboardStats);
-      // console.log("Realtime Res:", realTimeEnergy);
+      // // console.log("Fetching dashboard data for user:", user.name);
+      // // console.log("Stats:", dashboardStats);
+      // // console.log("Realtime Res:", realTimeEnergy);
       // Set up auto-refresh every 30 seconds for real-time data
       const interval = setInterval(fetchDashboardData, 30000);
       return () => clearInterval(interval);

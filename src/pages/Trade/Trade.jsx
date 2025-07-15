@@ -100,7 +100,7 @@ const Trade = () => {
   };
 
   useEffect(() => {
-    console.log("context in trade: ", context);
+    // console.log("context in trade: ", context);
     if (context.theme) {
       setColors(colorsInLightMode);
     } else {
@@ -167,7 +167,7 @@ const Trade = () => {
       })
       .filter((item) => item.time && !isNaN(item.value) && !isNaN(item.time)); // Filter out invalid entries
 
-    console.log("Transformed chart data:", transformed.slice(0, 3));
+    // console.log("Transformed chart data:", transformed.slice(0, 3));
     return transformed;
   };
 

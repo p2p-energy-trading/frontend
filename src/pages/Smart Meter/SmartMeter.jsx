@@ -103,7 +103,7 @@ const SmartMeter = () => {
   const { theme } = useContext(AppContext); // listen theme from context
 
   useEffect(() => {
-    console.log("Theme changed:", theme);
+    // console.log("Theme changed:", theme);
   }, [theme]);
 
   const {
