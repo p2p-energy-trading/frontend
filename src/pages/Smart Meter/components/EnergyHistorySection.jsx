@@ -3,34 +3,34 @@ import Datagrid from "../../../components/datagrid/Datagrid";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 import { historyBarOptions } from "../helper/chartOptions";
 import { energyHistoryHeader, tableOptions } from "../helper/smartMeter";
+import { formatEnergy } from "../../../utils/formatUnits";
+import { useMemo } from "react";
 
-const EnergyHistorySection = ({ historyBarData, loading = false }) => {
-  // Function to convert UTC time to WIB (+7 hours)
-  const convertToWIB = (timeString) => {
-    if (!timeString || typeof timeString !== "string") return timeString;
+const EnergyHistorySection = ({
+  historyBarData,
+  loading = false,
+  isProsumer = true,
+}) => {
+  // Filter datasets based on user role
+  const filteredChartData = useMemo(() => {
+    if (!historyBarData) return null;
 
-    // Parse the time string (e.g., "11.00" -> 11.00)
-    const timeFloat = parseFloat(timeString);
-    if (isNaN(timeFloat)) return timeString;
+    return {
+      ...historyBarData,
+      datasets: isProsumer
+        ? historyBarData.datasets
+        : historyBarData.datasets.filter(
+            (dataset) => dataset.label !== "Solar"
+          ),
+    };
+  }, [historyBarData, isProsumer]);
 
-    // Extract hours and minutes
-    const hours = Math.floor(timeFloat);
-    const minutes = Math.round((timeFloat - hours) * 100);
-
-    // Add 7 hours for WIB conversion
-    let wibHours = hours + 7;
-
-    // Handle overflow (24:00 -> 00:00)
-    if (wibHours >= 24) {
-      wibHours = wibHours - 24;
-    }
-
-    // Format back to "HH.MM" format
-    const formattedHours = wibHours.toString().padStart(2, "0");
-    const formattedMinutes = minutes.toString().padStart(2, "0");
-
-    return `${formattedHours}.${formattedMinutes}`;
-  };
+  // Filter table headers based on user role
+  const filteredTableHeaders = useMemo(() => {
+    return isProsumer
+      ? energyHistoryHeader
+      : energyHistoryHeader.filter((header) => header.columnName !== "Solar");
+  }, [isProsumer]);
 
   if (loading) {
     return (
@@ -54,26 +54,41 @@ const EnergyHistorySection = ({ historyBarData, loading = false }) => {
         <span className="font-semibold ">Energy History (Last 12h)</span>
       </div>
       <div className="w-full h-52 mb-2 relative min-w-[350px]">
-        <Bar
-          options={historyBarOptions}
-          data={{
-            ...historyBarData,
-            labels:
-              historyBarData?.labels?.map((time) => convertToWIB(time)) || [],
-          }}
-          height={208}
-        />
+        <Bar options={historyBarOptions} data={filteredChartData} />
       </div>
       <Datagrid
-        tableHeaderData={energyHistoryHeader}
+        tableHeaderData={filteredTableHeaders}
         tableData={
-          historyBarData?.labels?.map((time, idx) => [
-            idx,
-            convertToWIB(time), // Convert UTC time to WIB (+7 hours)
-            historyBarData.datasets[0]?.data?.[idx]?.toFixed(2) || "0.00", // Solar
-            Math.abs(historyBarData.datasets[1]?.data?.[idx] || 0).toFixed(2), // Usage (convert back from negative)
-            historyBarData.datasets[2]?.data?.[idx]?.toFixed(2) || "0.00", // Grid
-          ]) || []
+          historyBarData?.labels?.map((time, idx) => {
+            const solarDataset = historyBarData.datasets.find(
+              (d) => d.label === "Solar"
+            );
+            const usageDataset = historyBarData.datasets.find(
+              (d) => d.label === "Usage"
+            );
+            const gridDataset = historyBarData.datasets.find(
+              (d) => d.label === "Grid"
+            );
+
+            const row = [
+              idx,
+              time, // Time already formatted as HH:mm
+            ];
+
+            if (isProsumer) {
+              row.push(
+                formatEnergy(Number(solarDataset?.data?.[idx]) || 0).formatted // Solar
+              );
+            }
+
+            row.push(
+              formatEnergy(Math.abs(Number(usageDataset?.data?.[idx]) || 0))
+                .formatted, // Usage (convert back from negative)
+              formatEnergy(Number(gridDataset?.data?.[idx]) || 0).formatted // Grid
+            );
+
+            return row;
+          }) || []
         }
         tableOptions={tableOptions}
       />

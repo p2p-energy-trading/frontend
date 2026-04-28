@@ -41,8 +41,10 @@ const Transact = ({ placeOrder, isPlacingOrder, orderError }) => {
       if (response.ok) {
         const data = await response.json();
 
+        // console.log("Balances data:", data);
+
         if (data.success) {
-          setBalances({ ETK: data.ETK, IDRS: data.IDRS });
+          setBalances({ ETK: data.data.ETK, IDRS: data.data.IDRS });
         } else {
           setBalancesError(data.message || "Failed to fetch balances");
           setBalances(null);

@@ -35,16 +35,15 @@ const ChartPrice = ({ data, colors: propColors }) => {
       height: 300,
       timeScale: {
         timeVisible: true,
-        secondsVisible: true,
-        tickMarkFormatter: (time) => {
-          const date = new Date(time * 1000);
-          return date.toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          });
-        },
+        // secondsVisible: true,
+        // tickMarkFormatter: (time) => {
+        //   const date = new Date(time * 1000);
+        //   const hours = date.getUTCHours().toString().padStart(2, "0");
+        //   const minutes = date.getUTCMinutes().toString().padStart(2, "0");
+        //   return `${hours}:${minutes}`;
+        // },
+        uniformDistribution: true,
+        // minBarSpacing: 1,
         // Disable zoom and pan interactions
         rightOffset: 0,
         barSpacing: 6,
@@ -71,10 +70,10 @@ const ChartPrice = ({ data, colors: propColors }) => {
           visible: false,
         },
       },
-      crosshair: {
-        // Keep crosshair but disable zoom
-        mode: 0, // Normal crosshair mode
-      },
+      // crosshair: {
+      //   // Keep crosshair but disable zoom
+      //   mode: 0, // Normal crosshair mode
+      // },
       handleScroll: false,
       handleScale: false,
     });

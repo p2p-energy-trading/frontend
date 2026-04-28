@@ -10,12 +10,16 @@ import {
   ArrowLeftEndOnRectangleIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 // Drawer component renders the sidebar navigation menu
 const Drawer = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // Helper function to check if current path matches the link
+  const isActive = (path) => location.pathname === path;
 
   return (
     <div className="drawer-side overflow-hidden">
@@ -39,7 +43,13 @@ const Drawer = () => {
             <>
               <Link to="/">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <HomeIcon className="size-5 text-primary" />
                     Home
                   </span>
@@ -54,15 +64,19 @@ const Drawer = () => {
                 </li>
               </Link> */}
             </>
-          ) : (
-            () => null
-          )}
+          ) : null}
 
           {isAuthenticated ? (
             <>
               <Link to="/dashboard-user">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/dashboard-user")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <UserIcon className="size-5 text-primary" />
                     My Dashboard
                   </span>
@@ -70,7 +84,13 @@ const Drawer = () => {
               </Link>
               <Link to="/trade">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/trade")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <ArrowsRightLeftIcon className="size-5 text-primary" />
                     Trade
                   </span>
@@ -78,7 +98,13 @@ const Drawer = () => {
               </Link>
               <Link to="/power-conversion">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/power-conversion")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <BoltIcon className="size-5 text-primary" />
                     Energy Conversion
                   </span>
@@ -86,7 +112,13 @@ const Drawer = () => {
               </Link>
               <Link to="/balance-conversion">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/balance-conversion")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <CurrencyDollarIcon className="size-5 text-primary" />
                     Balance Conversion
                   </span>
@@ -94,7 +126,13 @@ const Drawer = () => {
               </Link>
               <Link to="/smart-meter">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/smart-meter")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <CalculatorIcon className="size-5 text-primary" />
                     Smart Meter
                   </span>
@@ -102,7 +140,13 @@ const Drawer = () => {
               </Link>
               <Link to="/wallet">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/wallet")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <WalletIcon className="size-5 text-primary" />
                     Wallets
                   </span>
@@ -113,7 +157,13 @@ const Drawer = () => {
             <>
               <Link to="/login">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/login")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <ArrowLeftEndOnRectangleIcon className="size-5 text-primary" />
                     Login
                   </span>
@@ -121,7 +171,13 @@ const Drawer = () => {
               </Link>
               <Link to="/register">
                 <li className="mb-1">
-                  <span className="flex items-center gap-2">
+                  <span
+                    className={`flex items-center gap-2 ${
+                      isActive("/register")
+                        ? "bg-base-200 font-semibold border-l-4 border-primary"
+                        : ""
+                    }`}
+                  >
                     <UserPlusIcon className="size-5 text-primary" />
                     Sign Up
                   </span>

@@ -69,9 +69,7 @@ const RecentTransactions = ({
             decorator: "link",
             href: `${
               import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
-            }/#section=explorer&widgetId=txn-detail&data="${
-              trade.blockchainTxHash
-            }"`,
+            }/transactions/${trade.blockchainTxHash}`,
             target: "_blank",
           }
         : "-",

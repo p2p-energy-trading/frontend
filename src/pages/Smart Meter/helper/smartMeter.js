@@ -15,9 +15,9 @@ export const getNowTimeString = () =>
 // Konstanta
 export const energyHistoryHeader = [
   { columnName: "Time", sort: false, filter: false },
-  { columnName: "Solar (kWh)", sort: false, filter: false },
-  { columnName: "Usage (kWh)", sort: false, filter: false },
-  { columnName: "Grid (kWh)", sort: false, filter: false },
+  { columnName: "Solar", sort: false, filter: false },
+  { columnName: "Usage", sort: false, filter: false },
+  { columnName: "Grid", sort: false, filter: false },
 ];
 
 export const tableOptions = {

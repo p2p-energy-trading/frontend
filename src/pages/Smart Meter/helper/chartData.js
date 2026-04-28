@@ -3,8 +3,8 @@ export function getSolarChartData(energyHistory, colorWarning) {
     labels: energyHistory.map((d) => d.time).reverse(),
     datasets: [
       {
-        label: "Solar (kW)",
-        data: energyHistory.map((d) => d.solar).reverse(),
+        label: "Solar (W)",
+        data: energyHistory.map((d) => Number(d.solar) || 0).reverse(),
         borderColor: colorWarning,
         backgroundColor: colorWarning + "33",
         tension: 0.4,
@@ -21,8 +21,8 @@ export function getConsumeChartData(energyHistory, colorError) {
     labels: energyHistory.map((d) => d.time).reverse(),
     datasets: [
       {
-        label: "Usage (kW)",
-        data: energyHistory.map((d) => d.usage).reverse(),
+        label: "Usage (W)",
+        data: energyHistory.map((d) => Number(d.usage) || 0).reverse(),
         borderColor: colorError,
         backgroundColor: colorError + "33",
         tension: 0.4,
@@ -47,7 +47,7 @@ export function getGridChartData(
     datasets: [
       {
         label: "Grid",
-        data: energyHistory.map((d) => d.grid).reverse(),
+        data: energyHistory.map((d) => Math.abs(Number(d.grid)) || 0).reverse(),
         borderColor:
           gridStatus === "Exporting"
             ? colorSuccess
@@ -91,7 +91,7 @@ export function getHistoryBarData(
     datasets: [
       {
         label: "Solar",
-        data: energyHistory.map((d) => d.solar).reverse(),
+        data: energyHistory.map((d) => Number(d.solar) || 0).reverse(),
         backgroundColor: colorWarning,
         stack: "Stack 0",
         borderRadius: 4,
@@ -100,7 +100,9 @@ export function getHistoryBarData(
       },
       {
         label: "Usage",
-        data: energyHistory.map((d) => -Math.abs(d.usage)).reverse(),
+        data: energyHistory
+          .map((d) => -Math.abs(Number(d.usage) || 0))
+          .reverse(),
         backgroundColor: colorError,
         stack: "Stack 0",
         borderRadius: 4,
@@ -109,7 +111,7 @@ export function getHistoryBarData(
       },
       {
         label: "Grid",
-        data: energyHistory.map((d) => d.grid).reverse(),
+        data: energyHistory.map((d) => Number(d.grid) || 0).reverse(),
         backgroundColor: colorAccent,
         stack: "Stack 0",
         borderRadius: 4,

@@ -7,6 +7,7 @@ export default defineConfig({
   base: 'https://p2p-energy-trading.sekgus.site/',
   plugins: [tailwindcss(), react()],
   server: {
+    port: 5174,
     host: true
   }
 })

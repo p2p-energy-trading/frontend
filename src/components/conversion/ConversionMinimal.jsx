@@ -16,7 +16,7 @@ const ConversionMinimal = ({ first_change }) => {
     try {
       const response = await apiCall("/auth/profile");
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()).data;
         if (data.profile) {
           setPrimaryWalletAddress(data.profile.primaryWalletAddress || "");
           return data.profile.primaryWalletAddress;
@@ -81,10 +81,16 @@ const ConversionMinimal = ({ first_change }) => {
       const response = await apiCall(`/wallet/${selectedWallet}/balances`);
       if (response.ok) {
         const data = await response.json();
-        setBalances(data);
+        // Ensure balances always have default values
+        setBalances({
+          ETK: data?.data.ETK ?? 0,
+          IDRS: data?.data.IDRS ?? 0,
+        });
       }
     } catch (error) {
       console.error("Error fetching balances:", error);
+      // Reset to default on error
+      setBalances({ ETK: 0, IDRS: 0 });
     } finally {
       setLoading(false);
     }
@@ -125,7 +131,7 @@ const ConversionMinimal = ({ first_change }) => {
   const setPrimaryWallet = async (walletAddress) => {
     try {
       setSettingPrimary(true);
-      const response = await apiCall(`/wallet/${walletAddress}/primary`, {
+      const response = await apiCall(`/wallet/${walletAddress}/set-primary`, {
         method: "POST",
       });
 
@@ -162,7 +168,7 @@ const ConversionMinimal = ({ first_change }) => {
     <>
       <p className="text-base-content/60 mb-2">
         Energy Settlement - Automatic conversion of{" "}
-        <span className="font-mono">kWh</span> to{" "}
+        <span className="font-mono">Wh</span> to{" "}
         <span className="font-mono">{first_change}</span> tokens based on your
         energy meter readings
       </p>
@@ -207,7 +213,9 @@ const ConversionMinimal = ({ first_change }) => {
             {loading ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              balances.ETK.toLocaleString("id-ID", { minimumFractionDigits: 2 })
+              (balances?.ETK ?? 0).toLocaleString("id-ID", {
+                minimumFractionDigits: 2,
+              })
             )}
           </span>
         </div>

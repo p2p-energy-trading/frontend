@@ -61,8 +61,8 @@ const TokenTransactionHistory = ({
           text: `${txHash.slice(0, 6)}...${txHash.slice(-4)}`,
           decorator: "link",
           href: `${
-            import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
-          }/#section=explorer&widgetId=txn-detail&data="${txHash}"`,
+              import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
+            }/transactions/${txHash}`,
           target: "_blank",
         };
       };

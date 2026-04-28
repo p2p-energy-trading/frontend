@@ -19,7 +19,7 @@ const Wallet = () => {
     try {
       const response = await apiCall("/auth/profile");
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()).data;
         if (data.profile) {
           setPrimaryWalletAddress(data.profile.primaryWalletAddress || "");
         }
@@ -200,7 +200,7 @@ const Wallet = () => {
   // Set primary wallet
   const setPrimaryWallet = async (walletAddress) => {
     try {
-      const response = await apiCall(`/wallet/${walletAddress}/primary`, {
+      const response = await apiCall(`/wallet/${walletAddress}/set-primary`, {
         method: "POST",
       });
 

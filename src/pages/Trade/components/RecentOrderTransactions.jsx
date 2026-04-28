@@ -24,6 +24,7 @@ const RecentOrderTransactions = ({
       { columnName: "Wallet", sort: true, filter: false },
       { columnName: "Type", sort: true, filter: true },
       { columnName: "Amount (ETK)", sort: true, filter: false },
+      // { columnName: "Original Amount (ETK)", sort: true, filter: false },
       { columnName: "Price (IDRS/ETK)", sort: true, filter: false },
       { columnName: "Status", sort: true, filter: false },
       { columnName: "Created", sort: true, filter: false },
@@ -97,8 +98,8 @@ const RecentOrderTransactions = ({
           text: `${txHash.slice(0, 6)}...${txHash.slice(-4)}`,
           decorator: "link",
           href: `${
-            import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
-          }/#section=explorer&widgetId=txn-detail&data="${txHash}"`,
+              import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
+            }/transactions/${txHash}`,
           target: "_blank",
         };
       };
@@ -150,7 +151,9 @@ const RecentOrderTransactions = ({
         order.orderId,
         formatWalletAddress(order.walletAddress),
         getOrderTypeDecorator(order.orderType),
-        formatAmount(order.amountEtk),
+        // formatAmount(order.amountEtk),
+        formatAmount(order.originalAmountEtk),
+        // formatAmount(order.originalAmountEtk || order.amountEtk),
         formatPrice(order.priceIdrsPerEtk),
         getStatusDecorator(order.statusOnChain),
         formatDate(order.createdAtOnChain),

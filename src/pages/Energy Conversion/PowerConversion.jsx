@@ -12,15 +12,21 @@ import {
   BoltIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ConversionMinimal from "../../components/conversion/ConversionMinimal";
 import { apiCall } from "../../utils/api";
+import { formatPower, formatEnergy } from "../../utils/formatUnits";
+import { useAuth } from "../../context/AuthContext";
 
 const PowerConversion = () => {
+  const { user } = useAuth();
+  const isProsumer = user?.role === "Prosumer";
+
   // State for settlement estimator data
   const [settlementData, setSettlementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [etkBalance, setEtkBalance] = useState(0);
 
   // State for settlement history scope
   const [currentScope, setCurrentScope] = useState("own");
@@ -67,7 +73,7 @@ const PowerConversion = () => {
   };
 
   // Fetch settlement estimator data
-  const fetchSettlementData = async () => {
+  const fetchSettlementData = useCallback(async () => {
     try {
       const response = await apiCall("/energy/settlement-estimator");
       if (response.ok) {
@@ -93,25 +99,54 @@ const PowerConversion = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch ETK balance
+  const fetchEtkBalance = useCallback(async () => {
+    try {
+      // Get user's primary wallet address
+      const profileResponse = await apiCall("/auth/profile");
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        const primaryWallet = profileData?.data?.profile?.primaryWalletAddress;
+
+        if (primaryWallet) {
+          const response = await apiCall(`/wallet/${primaryWallet}/balances`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setEtkBalance(result.data.ETK || 0);
+            }
+          }
+        }
+      }
+      // console.log("ETK balance fetched:", etkBalance);
+    } catch (err) {
+      console.error("Error fetching ETK balance:", err);
+    }
+  }, []);
 
   useEffect(() => {
     // Initial fetch
     fetchSettlementData();
+    fetchEtkBalance();
 
     // Set up interval to fetch every second
     intervalRef.current = setInterval(() => {
       fetchSettlementData();
+      fetchEtkBalance();
     }, 1000);
-
-    // Initial fetch of settlement history
-    refetchSettlementHistory(currentScope, limit);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
+  }, [fetchSettlementData, fetchEtkBalance]);
+
+  // Separate effect for settlement history
+  useEffect(() => {
+    refetchSettlementHistory(currentScope, limit);
   }, [currentScope, limit, refetchSettlementHistory]);
 
   // Format time helper function
@@ -133,14 +168,14 @@ const PowerConversion = () => {
 
             {/* ETK Balance Display */}
             <ConversionMinimal
-              first_change={"ETKS"}
-              second_change={"kWhS"}
+              first_change={"ETK"}
+              second_change={"Wh"}
               rate={3}
               balanceKey="etk_balance"
             />
 
             {/* Periodic Settlement Estimator */}
-            <div className="divider">Periodic Settlement Estimator</div>
+            <div className="divider">Periodic Settlement</div>
 
             {/* Explanation Section */}
             <div className="mb-4 p-4 bg-info/10 rounded-lg border border-info/20">
@@ -162,23 +197,36 @@ const PowerConversion = () => {
                 <p>
                   • <strong>Automatic Settlement:</strong> Every{" "}
                   {settlementData?.periodMinutes || 5} minutes, the system
-                  calculates your net energy (export - import)
+                  calculates your{" "}
+                  {isProsumer
+                    ? "net energy (export - import)"
+                    : "energy consumption"}
                 </p>
                 <p>
-                  • <strong>ETK Conversion:</strong> Net energy is converted to
-                  ETK tokens (1 kWh = 1 ETK)
+                  • <strong>ETK Conversion:</strong>{" "}
+                  {isProsumer ? "Net energy" : "Energy consumed"} is converted
+                  to ETK tokens (1 kWh = 1 ETK)
                 </p>
                 <p>
-                  • <strong>Minimum Requirement:</strong> At least 100Wh (0.1
-                  kWh) net energy is needed for settlement execution
+                  • <strong>Minimum Requirement:</strong> At least 100 Wh{" "}
+                  {isProsumer ? "net energy" : "consumed"} is needed for
+                  settlement execution
+                </p>
+                {isProsumer && (
+                  <p>
+                    • <strong>Negative Net:</strong> Export {">"} Import = ETK
+                    minted to your wallet
+                  </p>
+                )}
+                <p>
+                  • <strong>Positive Net:</strong>{" "}
+                  {isProsumer ? "Import > Export" : "Energy imported"} = ETK
+                  burned from your wallet
                 </p>
                 <p>
-                  • <strong>Positive Net:</strong> Export {">"}Import = ETK
-                  minted to your account
-                </p>
-                <p>
-                  • <strong>Negative Net:</strong> Import {">"} Export = ETK
-                  burned from your account
+                  • <strong>Insufficient ETK:</strong> If ETK balance is
+                  insufficient, settlement will not proceed. Import relay shuts
+                  off until balance is restored.
                 </p>
               </div>
             </div>
@@ -242,169 +290,321 @@ const PowerConversion = () => {
               </div>
             ) : settlementData ? (
               <>
-                <div className="mb-2">
-                  <span className="font-semibold">
-                    {settlementData.status === "EXPORTING"
-                      ? "Exporting"
+                {/* 1. Settlement Status Header */}
+                <div
+                  className={`mb-4 p-3 rounded-lg border ${
+                    settlementData.status === "EXPORTING"
+                      ? "bg-primary/10 border-primary/20 text-success"
                       : settlementData.status === "IMPORTING"
-                      ? "Importing"
-                      : "Idle"}
-                  </span>{" "}
-                  <span className="text-base-content/60">
-                    ({settlementData.periodMinutes} minute period)
-                  </span>
+                      ? "bg-error/10 border-error/20 text-error"
+                      : "bg-base-content/10 border-base-content/20 text-base-content"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold">
+                        {settlementData.status === "EXPORTING"
+                          ? "🟢 Exporting"
+                          : settlementData.status === "IMPORTING"
+                          ? "🔴 Importing"
+                          : "⚪ Idle"}
+                      </div>
+                      <div className="text-xs text-base-content/60 mt-1">
+                        {settlementData.periodMinutes} minute settlement period
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm">
-                    Current power:{" "}
-                    <span className="font-semibold">
-                      {settlementData.currentPowerKw} kW
+                {/* 2. Power Information Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                  <div className="p-3 rounded-lg bg-base-200">
+                    <div className="text-xs text-base-content/60 mb-1">
+                      Current Power
+                    </div>
+                    <div className="text-lg font-bold font-mono">
+                      {(() => {
+                        const formatted = formatPower(
+                          settlementData.currentPowerKw
+                        );
+                        return (
+                          <>
+                            {formatted.value}
+                            <span className="text-xs ml-1">
+                              {formatted.unit}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-base-200">
+                    <div className="text-xs text-base-content/60 mb-1">
+                      Average Power
+                    </div>
+                    <div className="text-lg font-bold font-mono">
+                      {(() => {
+                        const formatted = formatPower(
+                          settlementData.averagePowerKw
+                        );
+                        return (
+                          <>
+                            {formatted.value}
+                            <span className="text-xs ml-1">
+                              {formatted.unit}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Settlement Progress */}
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-base-content/70 mb-2">
+                    Settlement Progress
+                  </div>
+                  <div className="w-full bg-base-300 rounded h-3 mb-2 overflow-hidden">
+                    <div
+                      className={`h-3 rounded transition-all bg-base-content`}
+                      style={{ width: `${settlementData.progressPercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-base-content/60">
+                    <div>
+                      <div className="text-[10px] opacity-70">Start</div>
+                      <div className="font-mono font-semibold">
+                        {formatTime(settlementData.periodStartTime)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] opacity-70">Current</div>
+                      <div className="font-mono font-semibold">
+                        {formatTime(settlementData.currentTime)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] opacity-70">End</div>
+                      <div className="font-mono font-semibold">
+                        {formatTime(settlementData.periodEndTime)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-base-content/60 mt-2 flex items-center justify-between">
+                    <span>Time Remaining:</span>
+                    <span className="font-mono font-semibold text-primary">
+                      {settlementData.timeRemaining}
                     </span>
-                  </span>
+                  </div>
                 </div>
 
-                <div className="text-xs text-base-content/60 mb-2">
-                  Average power:{" "}
-                  <span className="font-semibold">
-                    {settlementData.averagePowerKw} kW
-                  </span>
-                  <br />
-                  Estimated ETK{" "}
-                  {settlementData.status === "EXPORTING"
-                    ? "to be gained"
-                    : settlementData.status === "IMPORTING"
-                    ? "to be burned"
-                    : "no change"}{" "}
-                  at settlement:{" "}
-                  <span className="font-semibold">
-                    {settlementData.estimatedEtkAtSettlement} ETK
-                  </span>
-                  <br />
-                  Running ETK:{" "}
-                  <span className="font-semibold">
-                    {settlementData.currentRunningEtk} ETK
-                  </span>
-                  <br />
-                  Net Energy:{" "}
-                  <span className="font-semibold">
-                    {settlementData.netEnergyWh} Wh
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-base-200 rounded h-3 mb-1">
-                  <div
-                    className={`h-3 rounded ${
-                      settlementData.status === "EXPORTING"
-                        ? "bg-primary"
-                        : settlementData.status === "IMPORTING"
-                        ? "bg-error"
-                        : "bg-base-content"
-                    }`}
-                    style={{ width: `${settlementData.progressPercentage}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex justify-between text-xs text-base-content/60">
-                  <span>
-                    Start: {formatTime(settlementData.periodStartTime)}
-                  </span>
-                  <span>Current: {formatTime(settlementData.currentTime)}</span>
-                  <span>End: {formatTime(settlementData.periodEndTime)}</span>
-                </div>
-
-                <div className="text-xs text-base-content/60 mt-2">
-                  Time remaining:{" "}
-                  <span className="font-semibold">
-                    {settlementData.timeRemaining}
-                  </span>
-                </div>
-
-                {/* Settlement Readiness Indicator */}
-                <div className="mt-4 p-3 rounded-lg border">
-                  {Math.abs(settlementData.netEnergyWh) >= 100 ? (
-                    <div className="flex items-center gap-2 text-success">
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">Settlement Ready</div>
-                        <div className="text-xs">
-                          Net energy (
-                          {Math.abs(settlementData.netEnergyWh).toFixed(2)} Wh)
-                          meets minimum requirement (100 Wh)
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-warning">
-                      <svg
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div>
-                        <div className="font-semibold">Settlement Pending</div>
-                        <div className="text-xs">
-                          Net energy (
-                          {Math.abs(settlementData.netEnergyWh).toFixed(2)} Wh)
-                          below minimum requirement (100 Wh)
-                        </div>
-                        <div className="text-xs mt-1">
-                          Need{" "}
-                          {(100 - Math.abs(settlementData.netEnergyWh)).toFixed(
-                            2
-                          )}{" "}
-                          Wh more for settlement execution
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Energy breakdown */}
+                {/* 4. Energy Summary Card */}
                 {settlementData.settlementEnergyWh && (
-                  <div className="mt-4">
-                    <div className="text-sm font-semibold mb-2">
-                      Settlement Energy Breakdown:
+                  <div className="mb-4 p-4 rounded-lg bg-base-200" style={{}}>
+                    {/* Net Energy Main */}
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-base-content/60 mb-1">
+                        Net Energy
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <div
+                          className={`text-3xl font-bold font-mono ${
+                            settlementData.netEnergyWh >= 0
+                              ? "text-primary"
+                              : "text-error"
+                          }`}
+                        >
+                          {(() => {
+                            const formatted = formatEnergy(
+                              Math.abs(settlementData.netEnergyWh)
+                            );
+                            return formatted.value;
+                          })()}
+                        </div>
+                        <div className="text-sm text-base-content/60">
+                          {
+                            formatEnergy(Math.abs(settlementData.netEnergyWh))
+                              .unit
+                          }
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span>Grid Export:</span>
-                        <span className="font-mono text-primary">
-                          {parseFloat(
-                            settlementData.settlementEnergyWh.gridExport
-                          ).toFixed(2)}{" "}
-                          Wh
+
+                    {/* Status */}
+                    {isProsumer && (
+                      <div
+                        className="mt-3 p-2 rounded text-xs font-semibold"
+                        style={{
+                          backgroundColor:
+                            settlementData.netEnergyWh > 0
+                              ? "rgb(34, 197, 94, 0.1)"
+                              : settlementData.netEnergyWh < 0
+                              ? "rgb(239, 68, 68, 0.1)"
+                              : "rgb(107, 114, 128, 0.1)",
+                          color:
+                            settlementData.netEnergyWh > 0
+                              ? "rgb(34, 197, 94)"
+                              : settlementData.netEnergyWh < 0
+                              ? "rgb(239, 68, 68)"
+                              : "rgb(107, 114, 128)",
+                        }}
+                      >
+                        {settlementData.netEnergyWh > 0 ? (
+                          <span>More energy exported than imported</span>
+                        ) : settlementData.netEnergyWh < 0 ? (
+                          <span>More energy imported than exported</span>
+                        ) : (
+                          <span>Export and import balanced</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Export & Import Sub-info */}
+                    <div className="divider my-2"></div>
+                    <div
+                      className={`grid ${
+                        isProsumer ? "grid-cols-2" : "grid-cols-1"
+                      } gap-2 text-xs mb-3`}
+                    >
+                      {isProsumer && (
+                        <div className="flex items-center justify-between p-2 rounded bg-base-100">
+                          <span className="text-base-content/70">Export</span>
+                          <span className="font-mono font-semibold text-primary">
+                            {
+                              formatEnergy(
+                                settlementData.settlementEnergyWh.gridExport
+                              ).formatted
+                            }
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between p-2 rounded bg-base-100">
+                        <span className="text-base-content/70">Import</span>
+                        <span className="font-mono font-semibold text-error">
+                          {
+                            formatEnergy(
+                              settlementData.settlementEnergyWh.gridImport
+                            ).formatted
+                          }
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Grid Import:</span>
-                        <span className="font-mono text-error">
-                          {parseFloat(
-                            settlementData.settlementEnergyWh.gridImport
-                          ).toFixed(2)}{" "}
-                          Wh
-                        </span>
+                    </div>
+
+                    {/* Running ETK */}
+                    <div
+                      className="mb-3 p-2 rounded-lg"
+                      style={{
+                        backgroundColor:
+                          settlementData.netEnergyWh > 0
+                            ? "rgb(34, 197, 94, 0.1)"
+                            : settlementData.netEnergyWh < 0
+                            ? "rgb(239, 68, 68, 0.1)"
+                            : "rgb(107, 114, 128, 0.1)",
+                      }}
+                    >
+                      <div className="text-xs text-base-content/60 mb-1">
+                        ETK{" "}
+                        {settlementData.netEnergyWh > 0
+                          ? "to be gained"
+                          : settlementData.netEnergyWh < 0
+                          ? "to be burned"
+                          : "no change"}
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <div
+                          className={`text-2xl font-bold font-mono ${
+                            settlementData.netEnergyWh >= 0
+                              ? "text-primary"
+                              : "text-error"
+                          }`}
+                        >
+                          {Math.abs(settlementData.currentRunningEtk).toFixed(
+                            2
+                          )}
+                        </div>
+                        <div className="text-xs text-base-content/60">ETK</div>
                       </div>
                     </div>
                   </div>
                 )}
+
+                {/* 5. Settlement Readiness Indicator */}
+                <div
+                  className="p-3 rounded-lg "
+                  style={{
+                    backgroundColor:
+                      Math.abs(settlementData.netEnergyWh) >= 100 &&
+                      (settlementData.netEnergyWh >= 0 ||
+                        etkBalance >=
+                          Math.abs(settlementData.currentRunningEtk))
+                        ? "rgb(34, 197, 94, 0.05)"
+                        : "rgb(245, 158, 11, 0.05)",
+                  }}
+                >
+                  {Math.abs(settlementData.netEnergyWh) >= 100 &&
+                  (settlementData.netEnergyWh >= 0 ||
+                    etkBalance >=
+                      Math.abs(settlementData.currentRunningEtk)) ? (
+                    <div className="flex items-start gap-2">
+                      <div className="text-success mt-0.5">✓</div>
+                      <div>
+                        <div className="font-semibold text-sm text-success">
+                          Settlement Ready
+                        </div>
+                        <div className="text-xs text-base-content/60 mt-0.5">
+                          Net energy meets minimum requirement (
+                          {formatEnergy(100).formatted})
+                        </div>
+                        {settlementData.netEnergyWh < 0 && (
+                          <div className="text-xs text-success mt-2 p-2 rounded bg-success/10">
+                            ✓ Your ETK balance ({etkBalance.toFixed(2)} ETK) is
+                            sufficient to burn (
+                            {Math.abs(settlementData.currentRunningEtk).toFixed(
+                              2
+                            )}{" "}
+                            ETK)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <div className="text-warning mt-0.5">⚠</div>
+                      <div>
+                        <div className="font-semibold text-sm text-warning">
+                          Settlement Pending
+                        </div>
+                        {Math.abs(settlementData.netEnergyWh) < 100 ? (
+                          <div className="text-xs text-base-content/60 mt-0.5">
+                            Need{" "}
+                            {
+                              formatEnergy(
+                                100 - Math.abs(settlementData.netEnergyWh)
+                              ).formatted
+                            }{" "}
+                            more for settlement execution
+                          </div>
+                        ) : (
+                          <div className="text-xs text-base-content/60 mt-0.5">
+                            Insufficient ETK balance. You have{" "}
+                            <span className="font-semibold">
+                              {etkBalance.toFixed(2)} ETK
+                            </span>
+                            , but need{" "}
+                            <span className="font-semibold">
+                              {Math.abs(
+                                settlementData.currentRunningEtk
+                              ).toFixed(2)}{" "}
+                              ETK
+                            </span>{" "}
+                            to complete settlement
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div className="text-center py-4 text-base-content/60">

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import ChartPrice from "../../components/trade/ChartPrice";
 import { AppContext } from "../../context/context";
 import { colorsInDarkMode, colorsInLightMode } from "./helper/tradeUtils";
@@ -119,19 +119,20 @@ const Trade = () => {
     const getIntervalMs = (interval) => {
       switch (interval) {
         case "1s":
-          return 1000;
+          return 5000; // Every 5 seconds for 1s interval
         case "1m":
-          return 60000;
+          return 10000; // Every 10 seconds for 1m interval
         case "5m":
-          return 300000;
+          return 30000; // Every 30 seconds for 5m interval
         case "1h":
-          return 3600000;
+          return 60000; // Every 60 seconds for 1h interval
         default:
-          return 1000;
+          return 5000;
       }
     };
 
     const refreshInterval = setInterval(() => {
+      // Silent refresh without triggering loading state
       fetchPriceHistory(selectedInterval);
     }, getIntervalMs(selectedInterval));
 
@@ -143,11 +144,12 @@ const Trade = () => {
     setSelectedInterval(interval);
   };
 
-  // Transform price history data for chart
-  const transformPriceHistoryData = (data) => {
-    if (!data || !Array.isArray(data)) return [];
+  // Transform price history data for chart (memoized to prevent unnecessary recalculation)
+  const chartData = useMemo(() => {
+    if (!priceHistory || !Array.isArray(priceHistory)) return [];
 
-    const transformed = data
+    // Transform and filter data
+    const transformed = priceHistory
       .map((item) => {
         // Handle different timestamp formats
         let time = item.timestamp || item.time;
@@ -160,6 +162,9 @@ const Trade = () => {
           time = Math.floor(time / 1000);
         }
 
+        // Convert UTC to GMT+7 (WIB) by adding 7 hours (7 * 3600 seconds)
+        time = time + 7 * 3600;
+
         return {
           time: time,
           value: parseFloat(item.price || item.close || item.value || 0),
@@ -167,9 +172,19 @@ const Trade = () => {
       })
       .filter((item) => item.time && !isNaN(item.value) && !isNaN(item.time)); // Filter out invalid entries
 
-    // console.log("Transformed chart data:", transformed.slice(0, 3));
-    return transformed;
-  };
+    // Remove duplicates by keeping only the last entry for each timestamp
+    const uniqueMap = new Map();
+    transformed.forEach((item) => {
+      uniqueMap.set(item.time, item);
+    });
+
+    // Convert back to array and sort by time (ascending order required by lightweight-charts)
+    const uniqueData = Array.from(uniqueMap.values()).sort(
+      (a, b) => a.time - b.time
+    );
+
+    return uniqueData;
+  }, [priceHistory]);
 
   return (
     <div className="space-y-6 w-full">
@@ -197,31 +212,32 @@ const Trade = () => {
         </div>
       )}
 
-      {/* Market Statistics */}
-      <div className="card card-border bg-base-100 border-base-300 border-2">
-        <div className="card-body">
-          <h2 className="card-title flex items-center gap-2">
-            <ChartBarIcon className="size-5 text-primary" />
-            Market Statistics
-          </h2>
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="stat">
-                  <div className="skeleton h-4 w-24 mb-2"></div>
-                  <div className="skeleton h-8 w-16"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <MarketStats marketStats={marketStats} loading={loading} />
-          )}
+      {/* Market Statistics and Price Chart Row */}
+      <div className="grid grid-cols-1 2xl:grid-cols-4 gap-4 w-full">
+        {/* Market Statistics */}
+        <div className="card card-border bg-base-100 border-base-300 border-2 2xl:col-span-2">
+          <div className="card-body">
+            <h2 className="card-title flex items-center gap-2">
+              <ChartBarIcon className="size-5 text-primary" />
+              Market Statistics
+            </h2>
+            {loading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="stat">
+                    <div className="skeleton h-4 w-24 mb-2"></div>
+                    <div className="skeleton h-8 w-16"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <MarketStats marketStats={marketStats} loading={loading} />
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
         {/* Market Price Chart */}
-        <div className="card card-border bg-base-100 border-base-300 border-2 col-span-1 sm:col-span-2 xl:col-span-3">
+        <div className="card card-border bg-base-100 border-base-300 border-2 2xl:col-span-2">
           <div className="card-body">
             <div className="flex items-center justify-between mb-4">
               <h2 className="card-title flex items-center gap-2">
@@ -244,11 +260,8 @@ const Trade = () => {
             </div>
             {loading ? (
               <div className="skeleton h-64 w-full"></div>
-            ) : transformPriceHistoryData(priceHistory).length > 0 ? (
-              <ChartPrice
-                data={transformPriceHistoryData(priceHistory)}
-                colors={colors}
-              />
+            ) : chartData.length > 0 ? (
+              <ChartPrice data={chartData} colors={colors} />
             ) : (
               <div className="flex items-center justify-center h-64 text-base-content/60">
                 <div className="text-center">
@@ -263,8 +276,12 @@ const Trade = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Trading Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
         {/* Order Book */}
-        <div className="card card-border bg-base-100 border-base-300 border-2 col-span-1 sm:col-span-1 xl:col-span-1">
+        <div className="card card-border bg-base-100 border-base-300 border-2 col-span-1 sm:col-span-2 xl:col-span-1">
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
               <ClipboardDocumentListIcon className="size-5 text-primary" />
@@ -287,7 +304,7 @@ const Trade = () => {
           </div>
         </div>
         {/* Trading Interface */}
-        <div className="card card-border bg-base-100 border-base-300 border-2 col-span-1 sm:col-span-1 xl:col-span-2">
+        <div className="card card-border bg-base-100 border-base-300 border-2 col-span-1 sm:col-span-2 xl:col-span-2">
           <div className="card-body">
             <h2 className="card-title flex items-center gap-2">
               <BanknotesIcon className="size-5 text-primary" />

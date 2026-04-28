@@ -3,14 +3,20 @@ import "./App.css";
 import Drawer from "./base/Drawer";
 import Footer from "./base/Footer";
 import Navbar from "./base/Navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppContext } from "./context/context";
 
 // Main App component that sets up the layout and navigation
 function App() {
   const [theme, setTheme] = useState(false);
   const [user, setUser] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Initialize drawer state from localStorage or default to false
+  const [drawerOpen, setDrawerOpen] = useState(() => {
+    const saved = localStorage.getItem("drawerOpen");
+    return saved ? JSON.parse(saved) : false;
+  });
+
   const location = useLocation();
 
   const contextValue = {
@@ -20,7 +26,21 @@ function App() {
     setUser,
   };
 
-  const handleDrawerToggle = () => setDrawerOpen((prev) => !prev);
+  const handleDrawerToggle = () => {
+    setDrawerOpen((prev) => {
+      const newValue = !prev;
+      localStorage.setItem("drawerOpen", JSON.stringify(newValue));
+      return newValue;
+    });
+  };
+
+  // Sync drawer state with localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("drawerOpen");
+    if (saved) {
+      setDrawerOpen(JSON.parse(saved));
+    }
+  }, []);
 
   // Check if current route is homepage
   const isHomepage = location.pathname === "/";

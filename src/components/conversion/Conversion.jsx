@@ -41,10 +41,16 @@ const Conversion = ({ first_change, second_change, rate }) => {
       const response = await apiCall(`/wallet/${selectedWallet}/balances`);
       if (response.ok) {
         const data = await response.json();
-        setBalances(data);
+        // Ensure balances always have default values
+        setBalances({
+          ETK: data?.data.ETK ?? 0,
+          IDRS: data?.data.IDRS ?? 0,
+        });
       }
     } catch (error) {
       console.error("Error fetching balances:", error);
+      // Reset to default on error
+      setBalances({ ETK: 0, IDRS: 0 });
     } finally {
       setLoading(false);
     }
@@ -307,7 +313,7 @@ const Conversion = ({ first_change, second_change, rate }) => {
                 {loading ? (
                   <div className="skeleton h-6 w-20"></div>
                 ) : (
-                  balances.IDRS.toLocaleString("id-ID", {
+                  (balances?.IDRS ?? 0).toLocaleString("id-ID", {
                     minimumFractionDigits: 2,
                   })
                 )}
@@ -319,7 +325,7 @@ const Conversion = ({ first_change, second_change, rate }) => {
                 {loading ? (
                   <div className="skeleton h-6 w-20"></div>
                 ) : (
-                  balances.ETK.toLocaleString("id-ID", {
+                  (balances?.ETK ?? 0).toLocaleString("id-ID", {
                     minimumFractionDigits: 2,
                   })
                 )}
@@ -476,7 +482,7 @@ const Conversion = ({ first_change, second_change, rate }) => {
                   loading ||
                   !selectedWallet ||
                   !withdrawAmount ||
-                  balances.IDRS < Number(withdrawAmount)
+                  (balances?.IDRS ?? 0) < Number(withdrawAmount)
                 }
               >
                 {loading ? (
@@ -488,11 +494,12 @@ const Conversion = ({ first_change, second_change, rate }) => {
                   `Withdraw (Burn ${first_change})`
                 )}
               </button>
-              {balances.IDRS < Number(withdrawAmount) && withdrawAmount && (
-                <div className="text-xs text-error mt-1">
-                  Insufficient {first_change} balance
-                </div>
-              )}
+              {(balances?.IDRS ?? 0) < Number(withdrawAmount) &&
+                withdrawAmount && (
+                  <div className="text-xs text-error mt-1">
+                    Insufficient {first_change} balance
+                  </div>
+                )}
             </form>
           )}
 

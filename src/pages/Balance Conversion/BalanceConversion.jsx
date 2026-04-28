@@ -56,10 +56,13 @@ const BalanceConversion = () => {
     refetchTransactionHistory(currentScope, newLimit, currentTokenType);
   };
 
-  // Initial fetch and refresh when dependencies change
+  // Initial fetch only once on mount
   useEffect(() => {
+    // Scroll to top on component mount
+    window.scrollTo(0, 0);
     refetchTransactionHistory(currentScope, limit, currentTokenType);
-  }, [currentScope, limit, currentTokenType, refetchTransactionHistory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-1 xl:grid-cols-1 gap-4 w-full">

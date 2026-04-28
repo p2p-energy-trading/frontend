@@ -15,6 +15,9 @@ export default function useTradingApi() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Track if initial load is complete
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
   // Metadata for scope information
   const [tradesMetadata, setTradesMetadata] = useState(null);
   const [ordersMetadata, setOrdersMetadata] = useState(null);
@@ -271,7 +274,7 @@ export default function useTradingApi() {
 
   // Initial data fetch
   useEffect(() => {
-    if (user) {
+    if (user && !initialLoadComplete) {
       setLoading(true);
       Promise.all([
         fetchOrders(),
@@ -282,10 +285,12 @@ export default function useTradingApi() {
         fetchPriceHistory(),
       ]).finally(() => {
         setLoading(false);
+        setInitialLoadComplete(true);
       });
     }
   }, [
     user,
+    initialLoadComplete,
     fetchOrders,
     fetchRecentTrades,
     fetchOrderbook,
@@ -294,20 +299,22 @@ export default function useTradingApi() {
     fetchPriceHistory,
   ]);
 
-  // Set up auto-refresh for trading data
+  // Set up auto-refresh for trading data (silent updates without loading state)
   useEffect(() => {
-    if (user) {
+    if (user && initialLoadComplete) {
       const interval = setInterval(() => {
+        // Silent refresh - no loading state change to prevent scroll jump
         fetchRecentTrades();
         fetchOrderbook();
         fetchOrderbookDetailed();
         fetchMarketStats();
-      }, 3000); // Refresh every 3 seconds
+      }, 5000); // Refresh every 5 seconds
 
       return () => clearInterval(interval);
     }
   }, [
     user,
+    initialLoadComplete,
     fetchRecentTrades,
     fetchOrderbook,
     fetchOrderbookDetailed,

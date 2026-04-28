@@ -8,10 +8,10 @@ export const colorsInLightMode = {
 
 export const colorsInDarkMode = {
     backgroundColor: 'transparent',
-    lineColor: '#2962FF',
+    lineColor: '#9fe88d',
     textColor: 'white',
-    areaTopColor: '#2962FF',
-    areaBottomColor: 'rgba(41, 98, 255, 0.28)',
+    areaTopColor: '#7cb46e',
+    areaBottomColor: 'rgba(71, 103, 63, 0.28)',
 }
 
 export const initialData = [

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import Datagrid from "../../../components/datagrid/Datagrid";
 import { EyeIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
+import { formatEnergy } from "../../../utils/formatUnits";
 
 const SettlementHistory = ({
   settlements,
@@ -15,7 +16,7 @@ const SettlementHistory = ({
       { columnName: "Smart Meter", sort: true, filter: true },
       { columnName: "Period Start", sort: true, filter: false },
       { columnName: "Period End", sort: true, filter: false },
-      { columnName: "Net kWh", sort: true, filter: false },
+      { columnName: "Net Energy", sort: true, filter: false },
       { columnName: "ETK Credited", sort: true, filter: false },
       { columnName: "Status", sort: true, filter: true },
       { columnName: "TX Hash", sort: false, filter: false },
@@ -45,10 +46,12 @@ const SettlementHistory = ({
         hour: "2-digit",
         minute: "2-digit",
       }),
-      parseFloat(settlement.netKwhFromGrid).toLocaleString("id-ID", {
+      parseFloat(settlement.netWhFromGrid).toLocaleString("id-ID", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 4,
-      }) + " kWh",
+      }) +
+        " " +
+        formatEnergy(parseFloat(settlement.netWhFromGrid)).unit, // Convert kWh to Wh for proper unit formatting
       parseFloat(settlement.etkAmountCredited).toLocaleString("id-ID", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 6,
@@ -71,9 +74,7 @@ const SettlementHistory = ({
             decorator: "link",
             href: `${
               import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL
-            }/#section=explorer&widgetId=txn-detail&data="${
-              settlement.blockchainTxHash
-            }"`,
+            }/transactions/${settlement.blockchainTxHash}`,
             target: "_blank",
           }
         : "-",

@@ -25,8 +25,8 @@ export default function useSmartMeterApi() {
         const data = await response.json();
         setUserProfile(data);
         // Set first meter as selected by default
-        if (data.meters && data.meters.length > 0) {
-          setSelectedMeter(data.meters[0]);
+        if (data.data.meters && data.data.meters.length > 0) {
+          setSelectedMeter(data.data.meters[0]);
         }
       }
     } catch (error) {
@@ -38,7 +38,7 @@ export default function useSmartMeterApi() {
   // Fetch real-time energy data
   const fetchRealTimeData = useCallback(async () => {
     try {
-      const response = await apiCall("/dashboard/real-time-energy");
+      const response = await apiCall("/energy/real-time");
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -56,7 +56,9 @@ export default function useSmartMeterApi() {
     if (!selectedMeter?.meterId) return;
 
     try {
-      const response = await apiCall(`/device/status/${selectedMeter.meterId}`);
+      const response = await apiCall(
+        `/smart-meters/status/${selectedMeter.meterId}`
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -81,7 +83,7 @@ export default function useSmartMeterApi() {
       setControlError(null);
 
       try {
-        const response = await apiCall("/device/control", {
+        const response = await apiCall("/smart-meters/control", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -153,20 +155,34 @@ export default function useSmartMeterApi() {
 
   // Calculate grid status
   const getGridStatus = () => {
-    if (!currentData.netFlow) return "Idle";
-    return currentData.netFlow > 0
+    if (!currentData.gridNet) return "Idle";
+    return currentData.gridNet > 0
       ? "Exporting"
-      : currentData.netFlow < 0
+      : currentData.gridNet < 0
       ? "Importing"
       : "Idle";
   };
 
   // Calculate battery percentage (assuming 10kWh max capacity)
   const getBatteryPercent = () => {
-    const maxCapacity = 10; // kWh
-    const currentLevel = Math.abs(currentData.battery || 0);
-    return Math.min(100, Math.max(0, (currentLevel / maxCapacity) * 100));
+    const currentLevel = currentData.battery?.soc || 0;
+    return currentLevel;
   };
+
+  // Get battery status from isCharging flag
+  const getBatteryStatus = () => {
+    if (!currentData.battery) return "Idle";
+    if (currentData.battery.isCharging === true) return "Charging";
+    if (currentData.battery.isCharging === false) return "Discharging";
+    return "Idle";
+  };
+
+  // Get battery charge rate
+  const getBatteryRate = () => {
+    return currentData.battery?.chargeRate || 0;
+  };
+
+  // console.log("Current Data:", currentData);
 
   // Format energy history for charts
   const energyHistory =
@@ -177,11 +193,12 @@ export default function useSmartMeterApi() {
         time: new Date(item.timestamp).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
+          second: "2-digit",
           hour12: false,
         }),
         solar: item.solar || 0,
-        usage: item.load || 0,
-        grid: item.netFlow || 0,
+        usage: item.consumption || 0,
+        grid: item.gridNet || 0,
         battery: item.battery || 0, // Keep negative values for discharging
       })) || [];
 
@@ -193,34 +210,33 @@ export default function useSmartMeterApi() {
 
     // Real-time data
     solar: currentData.solar || 0,
-    consume: currentData.load || 0,
-    battery: Math.abs(currentData.battery || 0),
+    consume: currentData.consumption || 0,
     batteryPercent: getBatteryPercent(),
-    batteryFlow: currentData.battery || 0,
-    batteryStatus:
-      currentData.batteryDirection === "charging"
-        ? "Charging"
-        : currentData.batteryDirection === "discharging"
-        ? "Discharging"
-        : "Idle",
-    grid: currentData.netFlow || 0,
+    batteryRate: getBatteryRate(),
+    batteryStatus: getBatteryStatus(),
+    grid: currentData.gridNet || 0,
     gridStatus: getGridStatus(),
 
     // Device status
     deviceStatus,
     deviceConnected: deviceStatus?.isOnline || false,
-    lastUpdate: realTimeData?.lastUpdate
-      ? new Date(realTimeData.lastUpdate).toLocaleString("id-ID", {
-          timeZone: "Asia/Jakarta",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour12: false,
-        })
+    lastUpdate: realTimeData?.timeSeries[0]?.timestamp
+      ? new Date(realTimeData.timeSeries[0]?.timestamp).toLocaleString(
+          "id-ID",
+          {
+            timeZone: "Asia/Jakarta",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour12: false,
+          }
+        )
       : "Never",
+
+    timestamp: realTimeData?.timeSeries[0]?.timestamp || null,
 
     // History data
     energyHistory,

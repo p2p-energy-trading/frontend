@@ -10,17 +10,43 @@ const DeviceInfoApi = ({
   setSelectedMeter,
   userProfile,
   lastUpdate,
+  timestamp,
   deviceConnected,
+  deviceStatus,
 }) => {
   const meters = userProfile?.meters || [];
 
   // Function to format relative time
   const formatRelativeTime = (dateString) => {
+    // console.log("Formatting date string:", dateString);
+
     if (!dateString) return "N/A";
 
     const now = new Date();
-    const date = new Date(dateString);
+    let date;
+
+    // Check if dateString is already a Date object or ISO string
+    if (dateString instanceof Date) {
+      date = dateString;
+    } else if (typeof dateString === "string") {
+      // Try to parse the date string
+      date = new Date(dateString);
+    } else {
+      return "N/A";
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid date:", dateString);
+      return "N/A";
+    }
+
+    // console.log("Parsed date:", date);
+    // console.log("Now:", now);
+
     const diffInMs = now - date;
+    // console.log("Diff in ms:", diffInMs);
+
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
@@ -86,7 +112,7 @@ const DeviceInfoApi = ({
 
   return (
     <div className="card bg-base-100 border-2 border-base-300 p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 text-xs">
         {/* Device Selection */}
         <div>
           <div className="font-semibold mb-1 flex items-center gap-1">
@@ -113,7 +139,7 @@ const DeviceInfoApi = ({
               {selectedMeter?.meterId || "No Device"}
             </div>
           )}
-          <div className="text-base-content/50 mt-1">
+          <div className="text-base-content/50 mt-1 text-[10px]">
             {selectedMeter?.deviceModel} v{selectedMeter?.deviceVersion}
           </div>
         </div>
@@ -124,11 +150,11 @@ const DeviceInfoApi = ({
             <MapPinIcon className="w-3 h-3" />
             Location
           </div>
-          <div className="font-mono text-xs">
+          <div className="font-mono">
             {selectedMeter?.location || "Unknown"}
           </div>
-          <div className="text-base-content/50 mt-1">
-            Status: {selectedMeter?.status || "N/A"}
+          <div className="text-base-content/50 mt-1 text-[10px]">
+            {selectedMeter?.status || "N/A"}
           </div>
         </div>
 
@@ -138,15 +164,15 @@ const DeviceInfoApi = ({
             <ClockIcon className="w-3 h-3" />
             Last Update
           </div>
-          <div className="font-mono text-xs">{lastUpdate}</div>
-          <div className="text-base-content/50 mt-1">
-            Last Seen: {formatRelativeTime(selectedMeter?.lastSeen)}
+          <div className="font-mono">{lastUpdate}</div>
+          <div className="text-base-content/50 mt-1 text-[10px]">
+            {formatRelativeTime(timestamp)}
           </div>
         </div>
 
         {/* Connection Status */}
         <div>
-          <div className="font-semibold mb-1">Connection Status</div>
+          <div className="font-semibold mb-1">Connection</div>
           <span
             className={`inline-flex items-center gap-1 font-semibold ${
               deviceConnected ? "text-success" : "text-error"
@@ -159,19 +185,72 @@ const DeviceInfoApi = ({
             )}
             {deviceConnected ? "Online" : "Offline"}
           </span>
-          <div className="text-base-content/50 mt-1">
-            Created:{" "}
-            {selectedMeter?.createdAt
-              ? new Date(selectedMeter.createdAt).toLocaleString("id-ID", {
-                  timeZone: "Asia/Jakarta",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                  hour12: false,
-                })
+          <div className="text-base-content/50 mt-1 text-[10px] space-y-0.5">
+            <div className="flex items-center gap-1">
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${
+                  deviceStatus?.lastStatus?.wifi?.connected
+                    ? "bg-success"
+                    : "bg-error"
+                }`}
+              ></div>
+              <span>
+                WiFi: {deviceStatus?.lastStatus?.wifi?.rssi || "N/A"} dBm
+              </span>
+            </div>
+            {/* <div className="flex items-center gap-1">
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${
+                  deviceStatus?.lastStatus?.mqtt?.connected
+                    ? "bg-success"
+                    : "bg-error"
+                }`}
+              ></div>
+              <span>
+                MQTT: {deviceStatus?.lastStatus?.mqtt?.connected ? "OK" : "ERR"}
+              </span>
+            </div> */}
+          </div>
+        </div>
+
+        {/* System Memory */}
+        <div>
+          <div className="font-semibold mb-1 text-base-content/60">Memory</div>
+          <div className="font-mono">
+            {(
+              (deviceStatus?.lastStatus?.system?.free_heap || 0) / 1024
+            ).toFixed(1)}{" "}
+            KB
+          </div>
+          <div className="text-base-content/50 mt-1 text-[10px]">Free Heap</div>
+        </div>
+
+        {/* System Uptime */}
+        <div>
+          <div className="font-semibold mb-1 text-base-content/60">Uptime</div>
+          <div className="font-mono">
+            {(() => {
+              const uptimeMilliseconds =
+                deviceStatus?.lastStatus?.system?.uptime || 0;
+              const uptimeSeconds = Math.floor(uptimeMilliseconds / 1000);
+              const days = Math.floor(uptimeSeconds / 86400);
+              const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+              const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+
+              if (days > 0) {
+                return `${days}d ${hours}h`;
+              } else if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+              } else {
+                return `${minutes}m`;
+              }
+            })()}
+          </div>
+          <div className="text-base-content/50 mt-1 text-[10px]">
+            {deviceStatus?.lastStatus?.system?.uptime
+              ? `${Math.floor(
+                  deviceStatus.lastStatus.system.uptime / 1000 / 3600
+                )}h total`
               : "N/A"}
           </div>
         </div>

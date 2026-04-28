@@ -9,15 +9,16 @@ export const useSmartMeterStatus = () => {
   useEffect(() => {
     const checkSmartMeterStatus = async () => {
       try {
-        const response = await apiGet("/smart-meters/list");
-        const data = await response.json();
-        if (data.success) {
-          setHasSmartMeter(data.count > 0);
+        const response = await (await apiGet("/smart-meters/list")).json();
+        // console.log("Smart meter status response:", response);
+        
+        if (response.success) {
+          setHasSmartMeter(response.metadata.count > 0);
         }
       } catch (error) {
         console.error("Error checking smart meter status:", error);
         setError(
-          error.response?.data?.message || "Failed to check smart meter status"
+          error.response?.res?.message || "Failed to check smart meter status"
         );
         setHasSmartMeter(false);
       } finally {

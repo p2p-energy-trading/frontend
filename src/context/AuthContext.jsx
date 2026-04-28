@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()).data;
         // API returns: { profile: {...}, wallets: [...], meters: [...] }
         setUser({
           ...data.profile,
@@ -93,7 +93,9 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
-        const { access_token } = data;
+        const { access_token } = data.data;
+
+        // console.log("Login successful::", data);
 
         localStorage.setItem("token", access_token);
         setToken(access_token);
@@ -149,7 +151,10 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json().data;
+
+        // console.log("Refreshed user data:", data);
+
         // API returns: { profile: {...}, wallets: [...], meters: [...] }
         setUser({
           ...data.profile,

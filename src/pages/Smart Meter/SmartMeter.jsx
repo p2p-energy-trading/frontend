@@ -8,13 +8,12 @@ import EnergyHistorySection from "./components/EnergyHistorySection";
 import DeviceControlPanel from "./components/DeviceControlPanel";
 import useSmartMeterApi from "./hooks/useSmartMeterApi";
 import { useChartColors } from "./helper/chartColors";
-import { chartOptions, chartOptionsBattery } from "./helper/chartOptions";
+import { chartOptions } from "./helper/chartOptions";
 import {
   getSolarChartData,
   getConsumeChartData,
   getGridChartData,
   getHistoryBarData,
-  getBatteryChartData,
 } from "./helper/chartData";
 import { Line } from "react-chartjs-2";
 import {
@@ -53,11 +52,11 @@ const SmartMeter = () => {
     deviceConnected,
     solar,
     consume,
-    battery,
+    batteryPercent,
+    batteryRate,
     grid,
     gridStatus,
     energyHistory,
-    batteryFlow,
     batteryStatus,
     deviceStatus,
     sendControlCommand,
@@ -66,7 +65,20 @@ const SmartMeter = () => {
     loading,
     error,
     refreshData,
+    timestamp,
   } = useSmartMeterApi();
+
+  // Check if user is Prosumer or Consumer - handle async loading
+  const isProsumer = userProfile?.data?.profile?.role === "Prosumer";
+  const userRole = userProfile?.data?.profile || null;
+
+  useEffect(() => {
+    if (userProfile) {
+      // console.log("User Profile:", userProfile);
+      // console.log("User Role:", userRole?.role);
+      // console.log("Is Prosumer:", isProsumer);
+    }
+  }, [isProsumer, userProfile, userRole]);
 
   // Separate state for energy history data
   const [energyHistoryData, setEnergyHistoryData] = useState([]);
@@ -74,12 +86,19 @@ const SmartMeter = () => {
 
   // Fetch energy history data from separate API
   const fetchEnergyHistory = useCallback(async () => {
+    if (!selectedMeter) return;
+
     try {
       setEnergyHistoryLoading(true);
-      const response = await apiCall("/energy/history/hourly?hours=12");
+      const response = await apiCall(
+        `/energy/history/hourly?hours=12&meterId=${selectedMeter.meterId}`
+      );
 
       if (response.ok) {
         const data = await response.json();
+
+        // console.log("Fetched energy history data:", data);
+
         if (data.success) {
           setEnergyHistoryData(data.data);
         }
@@ -89,7 +108,7 @@ const SmartMeter = () => {
     } finally {
       setEnergyHistoryLoading(false);
     }
-  }, []);
+  }, [selectedMeter]);
 
   // Fetch energy history on component mount and periodically
   useEffect(() => {
@@ -141,27 +160,36 @@ const SmartMeter = () => {
       colorBaseContent,
     ]
   );
-  const batteryChartData = useMemo(
-    () =>
-      getBatteryChartData(
-        energyHistory,
-        batteryStatus,
-        colorSuccess,
-        colorError,
-        colorBaseContent
-      ),
-    [colorSuccess, colorError, colorBaseContent, batteryStatus, energyHistory]
-  );
 
   // Process energy history data for EnergyHistorySection
   const processedEnergyHistory = useMemo(() => {
-    return energyHistoryData.map((item) => ({
-      time: item.hour,
-      solar: item.solar || 0,
-      usage: item.consumption || 0,
-      grid: item.net || 0,
-      battery: item.battery || 0,
-    }));
+    // Limit to last 12 hours and format time properly
+    return (
+      energyHistoryData
+        // .slice(-12) // Take only last 12 hours
+        .map((item) => {
+          // Parse ISO timestamp and format to HH:mm - HH:mm range using UTC
+          const date = new Date(item.timestamp);
+          const startHours = date.getUTCHours().toString().padStart(2, "0");
+          const startMinutes = date.getUTCMinutes().toString().padStart(2, "0");
+
+          // Calculate end time (1 hour later)
+          const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+          const endHours = endDate.getUTCHours().toString().padStart(2, "0");
+          const endMinutes = endDate
+            .getUTCMinutes()
+            .toString()
+            .padStart(2, "0");
+
+          return {
+            time: `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`,
+            solar: item.solar || 0,
+            usage: item.consumption || 0,
+            grid: item.net || 0,
+            battery: item.battery || 0,
+          };
+        })
+    );
   }, [energyHistoryData]);
 
   // Create chart data for EnergyHistorySection
@@ -295,50 +323,58 @@ const SmartMeter = () => {
             setSelectedMeter={setSelectedMeter}
             userProfile={userProfile}
             lastUpdate={lastUpdate}
+            timestamp={timestamp}
             deviceConnected={deviceConnected}
+            deviceStatus={deviceStatus}
           />
 
           {/* Main Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-            <MetricCard
-              icon={
-                <svg
-                  className="w-6 h-6 text-warning"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="4"
-                    strokeWidth={2}
+          <div
+            className={`grid grid-cols-1 ${
+              isProsumer ? "md:grid-cols-3" : "md:grid-cols-2"
+            } gap-8 w-full`}
+          >
+            {isProsumer && (
+              <MetricCard
+                icon={
+                  <svg
+                    className="w-6 h-6 text-warning"
+                    fill="none"
                     stroke="currentColor"
-                  />
-                  <path
-                    strokeLinecap="round"
                     strokeWidth={2}
-                    stroke="currentColor"
-                    d="M12 2v2M12 20v2M22 12h-2M4 12H2M19.07 4.93l-1.41 1.41M6.34 6.34L4.93 4.93M19.07 19.07l-1.41-1.41M6.34 17.66l-1.41 1.41"
-                  />
-                </svg>
-              }
-              label="Solar Generation"
-              value={solar.toFixed(2)}
-              unit="kW"
-              color="text-warning"
-              chart={
-                <div className="w-full h-16 relative">
-                  <Line
-                    options={chartOptions}
-                    data={solarChartData}
-                    height={48}
-                  />
-                </div>
-              }
-              description={"Real-time solar panel output"}
-            />
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="4"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      d="M12 2v2M12 20v2M22 12h-2M4 12H2M19.07 4.93l-1.41 1.41M6.34 6.34L4.93 4.93M19.07 19.07l-1.41-1.41M6.34 17.66l-1.41 1.41"
+                    />
+                  </svg>
+                }
+                label="Solar Generation"
+                value={solar}
+                unit="W"
+                color="text-warning"
+                chart={
+                  <div className="w-full h-16 relative">
+                    <Line
+                      options={chartOptions}
+                      data={solarChartData}
+                      height={48}
+                    />
+                  </div>
+                }
+                description={"Real-time solar panel output"}
+              />
+            )}
             <MetricCard
               icon={
                 <svg
@@ -357,8 +393,8 @@ const SmartMeter = () => {
                 </svg>
               }
               label="Power Consumption"
-              value={consume.toFixed(2)}
-              unit="kW"
+              value={consume}
+              unit="W"
               color="text-error"
               chart={
                 <div className="w-full h-16 relative">
@@ -372,42 +408,37 @@ const SmartMeter = () => {
               description={"Real-time power consumption"}
             />
             <BatteryCard
-              battery={battery}
               batteryStatus={batteryStatus}
-              batteryFlow={batteryFlow}
-              description={"Battery flow"}
-              chart={
-                <div className="w-full h-16 relative">
-                  <Line
-                    options={chartOptionsBattery}
-                    data={batteryChartData}
-                    height={48}
-                  />
-                </div>
-              }
+              batteryRate={batteryRate}
+              batteryPercent={batteryPercent}
             />
           </div>
 
-          {/* Grid Status */}
-          <GridStatusCard
-            gridStatus={gridStatus}
-            grid={grid}
-            gridChartData={gridChartData}
-          />
+          {/* Grid Status & Device Control Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+            {/* Grid Status */}
+            <GridStatusCard
+              gridStatus={gridStatus}
+              grid={grid}
+              gridChartData={gridChartData}
+            />
 
-          {/* Device Control Panel */}
-          <DeviceControlPanel
-            deviceStatus={deviceStatus}
-            sendControlCommand={sendControlCommand}
-            isControlling={isControlling}
-            controlError={controlError}
-            selectedMeter={selectedMeter}
-          />
+            {/* Device Control Panel */}
+            <DeviceControlPanel
+              deviceStatus={deviceStatus}
+              sendControlCommand={sendControlCommand}
+              isControlling={isControlling}
+              controlError={controlError}
+              selectedMeter={selectedMeter}
+              userProfile={userRole}
+            />
+          </div>
 
           {/* Energy History */}
           <EnergyHistorySection
             historyBarData={energyHistoryBarData}
             loading={energyHistoryLoading}
+            isProsumer={isProsumer}
           />
         </>
       )}
